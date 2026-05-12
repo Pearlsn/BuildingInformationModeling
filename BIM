@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIM Drawing Review &amp; Compliance Portal</title>
+<style>
+  :root {
+    --navy: #1E2B5E;
+    --navy-light: #2A3B7A;
+    --orange: #F47B20;
+    --grey-50: #F8F9FB;
+    --grey-100: #EEF1F6;
+    --grey-200: #DDE3EC;
+    --grey-300: #C5CDD9;
+    --grey-500: #6B7280;
+    --grey-700: #374151;
+    --grey-900: #111827;
+    --green: #16A34A;
+    --green-light: #DCFCE7;
+    --red: #DC2626;
+    --red-light: #FEE2E2;
+    --amber: #D97706;
+    --amber-light: #FEF3C7;
+    --blue: #2563EB;
+    --blue-light: #DBEAFE;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: var(--grey-900);
+    background: var(--grey-50);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  a { color: var(--navy); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ===== Layout ===== */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 240px; background: var(--navy); color: #fff;
+    padding: 20px 0; flex-shrink: 0;
+  }
+  .sidebar-logo {
+    padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h1 {
+    font-size: 16px; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .sidebar-logo .sub { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+  .nav-item {
+    display: block; padding: 10px 20px; color: rgba(255,255,255,0.85);
+    cursor: pointer; font-size: 13px; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); text-decoration: none; }
+  .nav-item.active {
+    background: rgba(255,255,255,0.08); border-left-color: var(--orange);
+    color: #fff;
+  }
+  .nav-section {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    opacity: 0.5; padding: 16px 20px 6px;
+  }
+
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .topbar {
+    background: #fff; border-bottom: 1px solid var(--grey-200);
+    padding: 12px 28px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .breadcrumb { font-size: 13px; color: var(--grey-500); }
+  .breadcrumb b { color: var(--grey-900); font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; background: var(--grey-100);
+    font-size: 13px;
+  }
+  .user-avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--navy);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+  }
+  .notification-bell {
+    position: relative; cursor: pointer; padding: 4px;
+  }
+  .notification-dot {
+    position: absolute; top: 2px; right: 2px; width: 8px; height: 8px;
+    background: var(--orange); border-radius: 50%;
+  }
+
+  .content { padding: 28px; flex: 1; }
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .page-title { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .page-subtitle { color: var(--grey-500); margin-top: 4px; font-size: 13px; }
+
+  /* ===== Components ===== */
+  .card {
+    background: #fff; border: 1px solid var(--grey-200); border-radius: 8px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .card-header {
+    font-size: 15px; font-weight: 600; color: var(--grey-900);
+    margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--navy); color: #fff; }
+  .btn-primary:hover { background: var(--navy-light); }
+  .btn-orange { background: var(--orange); color: #fff; }
+  .btn-orange:hover { background: #e26a10; }
+  .btn-secondary { background: #fff; color: var(--grey-700); border: 1px solid var(--grey-300); }
+  .btn-secondary:hover { background: var(--grey-50); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-success { background: var(--green); color: #fff; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--grey-700); margin-bottom: 6px; text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .form-label .required { color: var(--red); margin-left: 2px; }
+  .form-control {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--grey-300);
+    border-radius: 6px; font-size: 13px; font-family: inherit;
+    background: #fff;
+  }
+  .form-control:focus {
+    outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,43,94,0.1);
+  }
+  .form-error {
+    color: var(--red); font-size: 12px; margin-top: 4px;
+    display: none;
+  }
+  .form-error.show { display: block; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  table.data-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table.data-table th {
+    text-align: left; padding: 10px 12px;
+    background: var(--grey-50); border-bottom: 2px solid var(--grey-200);
+    color: var(--grey-700); font-weight: 600;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  table.data-table td {
+    padding: 12px; border-bottom: 1px solid var(--grey-100);
+  }
+  table.data-table tr:hover { background: var(--grey-50); }
+  table.data-table tr.clickable { cursor: pointer; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .badge-draft { background: var(--grey-200); color: var(--grey-700); }
+  .badge-submitted { background: var(--blue-light); color: var(--blue); }
+  .badge-review { background: var(--amber-light); color: var(--amber); }
+  .badge-rfi { background: #FCE7F3; color: #BE185D; }
+  .badge-approved { background: var(--green-light); color: var(--green); }
+  .badge-rejected { background: var(--red-light); color: var(--red); }
+  .badge-withdrawn { background: var(--grey-200); color: var(--grey-500); }
+
+  .alert {
+    padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;
+    font-size: 13px; border-left: 4px solid;
+  }
+  .alert-success { background: var(--green-light); color: #14532D; border-color: var(--green); }
+  .alert-error { background: var(--red-light); color: #7F1D1D; border-color: var(--red); }
+  .alert-info { background: var(--blue-light); color: #1E3A8A; border-color: var(--blue); }
+  .alert-warning { background: var(--amber-light); color: #78350F; border-color: var(--amber); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 8px; padding: 24px;
+    width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    font-size: 18px; font-weight: 700; color: var(--navy);
+    margin-bottom: 16px;
+  }
+  .modal-footer {
+    display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;
+  }
+
+  .filter-bar {
+    display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .filter-bar .form-control { width: auto; min-width: 200px; }
+
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fff; border: 1px solid var(--grey-200); border-radius: 8px;
+    padding: 18px;
+  }
+  .stat-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--grey-500); font-weight: 600;
+  }
+  .stat-value {
+    font-size: 28px; font-weight: 700; color: var(--navy); margin-top: 8px;
+  }
+
+  /* Auth screens */
+  .auth-container {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  }
+  .auth-card {
+    background: #fff; border-radius: 10px; padding: 40px;
+    width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+  }
+  .auth-logo {
+    text-align: center; margin-bottom: 28px;
+  }
+  .auth-logo h1 {
+    font-size: 20px; color: var(--navy); font-weight: 700;
+  }
+  .auth-logo .sub {
+    font-size: 12px; color: var(--grey-500); margin-top: 4px;
+  }
+
+  /* Drawing list */
+  .drawing-row {
+    display: grid; grid-template-columns: 30px 1fr 120px 100px 100px 120px;
+    align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--grey-100);
+    cursor: pointer;
+  }
+  .drawing-row:hover { background: var(--grey-50); }
+  .drawing-icon {
+    width: 28px; height: 28px; background: var(--grey-100); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: var(--grey-700);
+  }
+
+  /* 3D Viewer */
+  .viewer-container {
+    height: 500px; background: #1a1a2e; border-radius: 8px;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.4); overflow: hidden;
+  }
+  .viewer-canvas {
+    width: 100%; height: 100%;
+    background:
+      linear-gradient(45deg, transparent 49%, rgba(255,255,255,0.05) 49%, rgba(255,255,255,0.05) 51%, transparent 51%),
+      radial-gradient(circle at 50% 50%, #2a2a4a 0%, #1a1a2e 100%);
+    position: relative;
+  }
+  .viewer-toolbar {
+    position: absolute; top: 12px; left: 12px;
+    display: flex; gap: 4px; background: rgba(0,0,0,0.5);
+    padding: 4px; border-radius: 6px;
+  }
+  .viewer-tool {
+    width: 32px; height: 32px; background: transparent; border: none;
+    color: rgba(255,255,255,0.7); cursor: pointer; border-radius: 4px;
+    font-size: 11px;
+  }
+  .viewer-tool:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .viewer-tool.active { background: var(--orange); color: #fff; }
+  .viewer-properties {
+    position: absolute; right: 12px; top: 12px; bottom: 12px;
+    width: 240px; background: rgba(0,0,0,0.7); border-radius: 6px;
+    padding: 12px; color: #fff; font-size: 12px; overflow-y: auto;
+  }
+  .viewer-properties h4 { font-size: 12px; margin-bottom: 8px; opacity: 0.7; }
+  .prop-row {
+    display: flex; justify-content: space-between;
+    padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 11px;
+  }
+  .prop-row span:first-child { opacity: 0.6; }
+  .layer-toggle {
+    display: flex; align-items: center; gap: 8px; padding: 4px 0;
+    cursor: pointer;
+  }
+  .layer-toggle input { cursor: pointer; }
+
+  /* Upload */
+  .upload-zone {
+    border: 2px dashed var(--grey-300); border-radius: 8px;
+    padding: 40px; text-align: center; background: var(--grey-50);
+    cursor: pointer;
+  }
+  .upload-zone:hover { border-color: var(--orange); background: #fff7f0; }
+  .upload-zone.dragover { border-color: var(--orange); background: #fff7f0; }
+
+  .progress-bar {
+    height: 8px; background: var(--grey-200); border-radius: 4px;
+    overflow: hidden; margin: 8px 0;
+  }
+  .progress-fill {
+    height: 100%; background: var(--green); width: 0%;
+    transition: width 0.3s;
+  }
+
+  /* Rule check */
+  .rule-card {
+    border: 1px solid var(--grey-200); border-radius: 6px; padding: 12px;
+    margin-bottom: 8px; display: flex; gap: 12px; align-items: center;
+  }
+  .rule-status {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 700;
+  }
+  .rule-pass { background: var(--green); }
+  .rule-fail { background: var(--red); }
+  .rule-warning { background: var(--amber); }
+  .rule-body { flex: 1; }
+  .rule-title { font-weight: 600; font-size: 13px; }
+  .rule-meta { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
+
+  /* Comparison */
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;
+  }
+  .compare-pane {
+    border: 1px solid var(--grey-200); border-radius: 8px; padding: 12px;
+    background: var(--grey-50); height: 300px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--grey-500); font-size: 13px;
+  }
+  .change-row {
+    padding: 8px 12px; border-bottom: 1px solid var(--grey-100);
+    font-size: 12px; display: flex; justify-content: space-between;
+  }
+  .change-added { border-left: 3px solid var(--green); }
+  .change-removed { border-left: 3px solid var(--red); }
+  .change-modified { border-left: 3px solid var(--amber); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--grey-500);
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; border-bottom: 1px solid var(--grey-200); margin-bottom: 20px;
+  }
+  .tab {
+    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 500;
+    color: var(--grey-500); border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--grey-900); }
+  .tab.active { color: var(--navy); border-bottom-color: var(--orange); }
+
+  /* Hidden state */
+  .hidden { display: none !important; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    padding: 12px 20px; border-radius: 6px; background: var(--grey-900);
+    color: #fff; font-size: 13px; z-index: 200;
+    animation: slideIn 0.3s;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* Notification panel */
+  .notif-panel {
+    position: absolute; top: 60px; right: 28px;
+    background: #fff; border: 1px solid var(--grey-200); border-radius: 8px;
+    width: 360px; max-height: 480px; overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 50;
+  }
+  .notif-item {
+    padding: 12px 16px; border-bottom: 1px solid var(--grey-100);
+    font-size: 13px;
+  }
+  .notif-item.unread { background: var(--blue-light); }
+  .notif-time { font-size: 11px; color: var(--grey-500); margin-top: 4px; }
+
+  .bim-el .face-top, .bim-el .face-right, .bim-el .face-front {
+    stroke: rgba(0,0,0,0.25); stroke-width: 0.5;
+    transition: filter 0.15s;
+  }
+  .bim-el:hover .face-top, .bim-el:hover .face-right, .bim-el:hover .face-front {
+    filter: brightness(1.18);
+  }
+  .bim-el.selected .face-top, .bim-el.selected .face-right, .bim-el.selected .face-front {
+    stroke: #f47b20; stroke-width: 1.5; filter: brightness(1.3) saturate(1.5);
+  }
+
+  </style>
+</head>
+<body>
+
+<!-- ============= AUTH SCREEN ============= -->
+<div id="screen-auth" class="auth-container">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>BIM Drawing Review &amp; Compliance Portal</h1>
+      <div class="sub">Regulatory Submission Platform</div>
+    </div>
+
+    <div id="login-form">
+      <div id="auth-alert" class="alert alert-error hidden"></div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-email">Email <span class="required">*</span></label>
+        <input id="login-email" data-testid="login-email" type="email" class="form-control" placeholder="user@example.com" autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Password <span class="required">*</span></label>
+        <input id="login-password" data-testid="login-password" type="password" class="form-control" autocomplete="current-password">
+      </div>
+
+      <button data-testid="login-submit" class="btn btn-primary" style="width: 100%; padding: 11px; justify-content: center;" onclick="doLogin()">Sign In</button>
+
+      <div style="text-align: center; margin-top: 16px; font-size: 13px;">
+        <a href="#" data-testid="forgot-password-link" onclick="showForgotPassword()">Forgot password?</a>
+      </div>
+
+      <div style="margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--grey-200); font-size: 11px; color: var(--grey-500);">
+        <b>Test Credentials</b><br>
+        QP: qp@example.com / Welcome@2026!<br>
+        Officer: officer@example.com / Welcome@2026!<br>
+        Senior Officer: senior@example.com / Welcome@2026!<br>
+        Admin: admin@example.com / Welcome@2026!<br>
+        Auditor: auditor@example.com / Welcome@2026!
+      </div>
+    </div>
+
+    <div id="mfa-form" class="hidden">
+      <div class="alert alert-info">Enter the 6-digit code from your authenticator app. Use <b>123456</b> for this assessment.</div>
+      <div class="form-group">
+        <label class="form-label">TOTP Code <span class="required">*</span></label>
+        <input id="mfa-code" data-testid="mfa-code" type="text" class="form-control" maxlength="6" placeholder="123456">
+      </div>
+      <button data-testid="mfa-submit" class="btn btn-primary" style="width: 100%; padding: 11px; justify-content: center;" onclick="doMfa()">Verify</button>
+    </div>
+
+    <div id="forgot-form" class="hidden">
+      <p style="margin-bottom: 16px; font-size: 13px; color: var(--grey-500);">Enter your email to receive a password reset link valid for 30 minutes.</p>
+      <div class="form-group">
+        <label class="form-label">Email <span class="required">*</span></label>
+        <input id="forgot-email" data-testid="forgot-email" type="email" class="form-control">
+      </div>
+      <button data-testid="forgot-submit" class="btn btn-primary" style="width: 100%; padding: 11px; justify-content: center;" onclick="doForgot()">Send Reset Link</button>
+      <div style="text-align: center; margin-top: 16px; font-size: 13px;">
+        <a href="#" onclick="showLogin()">Back to login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============= MAIN APP ============= -->
+<div id="screen-app" class="app hidden">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>BIM Portal</h1>
+      <div class="sub">Drawing Review &amp; Compliance</div>
+    </div>
+
+    <div class="nav-section">Workspace</div>
+    <a class="nav-item" data-testid="nav-dashboard" data-page="dashboard" onclick="navigate('dashboard')">Dashboard</a>
+    <a class="nav-item" data-testid="nav-projects" data-page="projects" onclick="navigate('projects')">Projects</a>
+    <a class="nav-item nav-officer hidden" data-testid="nav-review-queue" data-page="review-queue" onclick="navigate('review-queue')">Review Queue</a>
+
+    <div class="nav-section nav-admin hidden">Administration</div>
+    <a class="nav-item nav-admin hidden" data-testid="nav-users" data-page="users" onclick="navigate('users')">Users</a>
+    <a class="nav-item nav-admin hidden" data-testid="nav-rules" data-page="rules" onclick="navigate('rules')">Rule Library</a>
+
+    <div class="nav-section">Compliance</div>
+    <a class="nav-item" data-testid="nav-audit" data-page="audit" onclick="navigate('audit')">Audit Log</a>
+
+    <div style="position: absolute; bottom: 20px; left: 20px; right: 20px; font-size: 11px; opacity: 0.5;">
+      v1.0.0 · Internal · QA Assessment
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb" id="breadcrumb">Workspace / <b>Dashboard</b></div>
+      <div class="topbar-right">
+        <div class="notification-bell" data-testid="notification-bell" onclick="toggleNotifications()">
+          🔔
+          <span class="notification-dot" id="notif-dot"></span>
+        </div>
+        <div class="user-chip">
+          <div class="user-avatar" id="user-avatar">??</div>
+          <div>
+            <div style="font-weight: 600;" id="user-name" data-testid="user-name">—</div>
+            <div style="font-size: 11px; color: var(--grey-500);" id="user-role" data-testid="user-role">—</div>
+          </div>
+        </div>
+        <button data-testid="logout-btn" class="btn btn-secondary btn-sm" onclick="doLogout()">Sign Out</button>
+      </div>
+    </div>
+
+    <div id="notif-panel" class="notif-panel hidden">
+      <div style="padding: 12px 16px; font-weight: 600; border-bottom: 1px solid var(--grey-200);">Notifications</div>
+      <div id="notif-list"></div>
+    </div>
+
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<!-- ============= MODAL ROOT ============= -->
+<div id="modal-root" class="modal-backdrop">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<div id="toast-root"></div>
+
+<script>
+/* =====================================================================
+   BIM Drawing Review & Compliance Portal — QA Assessment Mock
+   Single-file SPA. State persisted to localStorage.
+   ===================================================================== */
+
+// ----- Seed data -----
+const SEED_USERS = [
+  { id: 'u1', email: 'qp@example.com', name: 'James Tan', role: 'QP', firm: 'TanArchitects' },
+  { id: 'u2', email: 'officer@example.com', name: 'Priya Singh', role: 'Officer', firm: 'Authority' },
+  { id: 'u3', email: 'senior@example.com', name: 'Marcus Lee', role: 'Senior Officer', firm: 'Authority' },
+  { id: 'u4', email: 'admin@example.com', name: 'Sarah Chen', role: 'Admin', firm: 'Authority' },
+  { id: 'u5', email: 'auditor@example.com', name: 'David Wong', role: 'Auditor', firm: 'Authority' }
+];
+
+const SEED_PROJECTS = [
+  {
+    id: 'p1', number: 'PRJ-2026-00001', name: 'Riverside Tower A',
+    address: '15 Riverside Road', lot: 'LOT-A-1234',
+    buildingType: 'Commercial', gfa: 12500.00, storeys: 28, basements: 2,
+    state: 'Draft', qpId: 'u1', officerId: null,
+    drawings: [
+      { id: 'd1', name: 'A-101 Ground Floor Plan', discipline: 'Architectural', drawingType: 'Plan', floor: 'L01', revision: 'R0', uploadedBy: 'u1', uploadedAt: '2026-04-15T09:00:00Z', size: 12400000, scanStatus: 'Clean' }
+    ],
+    createdAt: '2026-04-10T08:00:00Z', submittedAt: null,
+    rules: [], comments: []
+  },
+  {
+    id: 'p2', number: 'PRJ-2026-00002', name: 'Greenfield Industrial Park',
+    address: '88 Tuas Avenue 12', lot: 'LOT-B-9876',
+    buildingType: 'Industrial', gfa: 45000.00, storeys: 4, basements: 0,
+    state: 'Submitted', qpId: 'u1', officerId: 'u2',
+    drawings: [
+      { id: 'd2', name: 'A-100 Site Plan', discipline: 'Architectural', drawingType: 'Plan', floor: 'L00', revision: 'R0', uploadedBy: 'u1', uploadedAt: '2026-04-20T10:00:00Z', size: 8400000, scanStatus: 'Clean' },
+      { id: 'd3', name: 'S-201 Foundation Plan', discipline: 'Structural', drawingType: 'Plan', floor: 'L00', revision: 'R0', uploadedBy: 'u1', uploadedAt: '2026-04-20T10:05:00Z', size: 14000000, scanStatus: 'Clean' },
+      { id: 'd4', name: 'M-101 HVAC Layout', discipline: 'MEP', drawingType: 'Plan', floor: 'L01', revision: 'R1', uploadedBy: 'u1', uploadedAt: '2026-04-22T14:00:00Z', size: 9800000, scanStatus: 'Clean' }
+    ],
+    createdAt: '2026-04-12T08:00:00Z', submittedAt: '2026-04-22T15:00:00Z',
+    rules: [
+      { code: 'CORRIDOR-WIDTH', title: 'Minimum corridor width 1.2m', status: 'Pass', element: 'CORR-L01-A', measured: '1.35 m', required: '1.20 m' },
+      { code: 'DOOR-WIDTH', title: 'Minimum door width 0.9m', status: 'Pass', element: 'DOR-L01-12', measured: '1.00 m', required: '0.90 m' },
+      { code: 'FIRE-STAIRS', title: 'Fire escape stair count by GFA', status: 'Warning', element: '—', measured: '2 stairs', required: '3 stairs (GFA > 40,000)' },
+      { code: 'GFA-COMPUTE', title: 'GFA tolerance ±2%', status: 'Pass', element: '—', measured: '45,210 sqm', required: '45,000 ± 900 sqm' },
+      { code: 'MEP-CLASH', title: 'MEP vs Structure clash', status: 'Fail', element: 'CLASH-L02-7', measured: 'Beam B-204 intersects Duct DH-12', required: 'No clashes' }
+    ],
+    comments: []
+  },
+  {
+    id: 'p3', number: 'PRJ-2025-00134', name: 'Heritage Residences Phase 2',
+    address: '24 Orchard Boulevard', lot: 'LOT-C-2211',
+    buildingType: 'Residential', gfa: 8200.50, storeys: 12, basements: 1,
+    state: 'Approved', qpId: 'u1', officerId: 'u2',
+    drawings: [
+      { id: 'd5', name: 'A-100 Master Plan', discipline: 'Architectural', drawingType: 'Plan', floor: 'L00', revision: 'R2', uploadedBy: 'u1', uploadedAt: '2025-11-10T08:00:00Z', size: 11200000, scanStatus: 'Clean' }
+    ],
+    createdAt: '2025-10-01T08:00:00Z', submittedAt: '2025-11-12T10:00:00Z',
+    decisionAt: '2025-12-05T16:00:00Z', decision: 'Approved', decisionBy: 'u3',
+    rules: [], comments: []
+  }
+];
+
+const SEED_NOTIFICATIONS = [
+  { id: 'n1', userId: 'u1', text: 'Project PRJ-2026-00002 has been assigned to Reviewing Officer Priya Singh.', read: false, ts: '2026-04-22T15:01:00Z' },
+  { id: 'n2', userId: 'u1', text: 'Submission acknowledgement: PRJ-2026-00002 received.', read: false, ts: '2026-04-22T15:00:00Z' },
+  { id: 'n3', userId: 'u2', text: 'New submission assigned: Greenfield Industrial Park.', read: false, ts: '2026-04-22T15:01:00Z' }
+];
+
+// ----- State management -----
+const STORAGE_KEY = 'bim_portal_state_v1';
+const SESSION_KEY = 'bim_portal_session_v1';
+const LOGIN_ATTEMPTS_KEY = 'bim_portal_attempts_v1';
+
+function getState() {
+  let s = localStorage.getItem(STORAGE_KEY);
+  if (!s) {
+    const init = {
+      users: SEED_USERS,
+      projects: SEED_PROJECTS,
+      notifications: SEED_NOTIFICATIONS,
+      auditLog: [],
+      rules: [
+        { code: 'CORRIDOR-WIDTH', title: 'Minimum corridor width 1.2m', active: true },
+        { code: 'DOOR-WIDTH', title: 'Minimum door width 0.9m', active: true },
+        { code: 'FIRE-STAIRS', title: 'Fire escape stair count by GFA', active: true },
+        { code: 'GFA-COMPUTE', title: 'GFA tolerance ±2%', active: true },
+        { code: 'MEP-CLASH', title: 'MEP vs Structure clash', active: true }
+      ]
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(init));
+    return init;
+  }
+  return JSON.parse(s);
+}
+function setState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function getSession() { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; }
+function setSession(s) { sessionStorage.setItem(SESSION_KEY, JSON.stringify(s)); }
+function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+
+function audit(action, target, before, after) {
+  const session = getSession();
+  if (!session) return;
+  const state = getState();
+  state.auditLog.push({
+    id: 'a' + Date.now() + Math.random().toString(36).slice(2,6),
+    userId: session.userId, action, target,
+    before: before ? JSON.stringify(before) : null,
+    after: after ? JSON.stringify(after) : null,
+    ip: '127.0.0.1', ts: new Date().toISOString()
+  });
+  setState(state);
+}
+
+function notify(userId, text) {
+  const state = getState();
+  state.notifications.push({
+    id: 'n' + Date.now(), userId, text, read: false, ts: new Date().toISOString()
+  });
+  setState(state);
+}
+
+function toast(msg, type) {
+  const root = document.getElementById('toast-root');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.setAttribute('data-testid', 'toast');
+  if (type === 'success') t.style.background = 'var(--green)';
+  if (type === 'error') t.style.background = 'var(--red)';
+  t.textContent = msg;
+  root.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ----- Auth -----
+function getAttempts() {
+  const a = localStorage.getItem(LOGIN_ATTEMPTS_KEY);
+  return a ? JSON.parse(a) : {};
+}
+function setAttempts(a) { localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(a)); }
+
+function showLogin() {
+  document.getElementById('login-form').classList.remove('hidden');
+  document.getElementById('mfa-form').classList.add('hidden');
+  document.getElementById('forgot-form').classList.add('hidden');
+}
+function showForgotPassword() {
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('forgot-form').classList.remove('hidden');
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pwd = document.getElementById('login-password').value;
+  const alertBox = document.getElementById('auth-alert');
+
+  if (!email || !pwd) {
+    alertBox.textContent = 'Email and password are required.';
+    alertBox.classList.remove('hidden');
+    return;
+  }
+
+  // Account lockout check
+  const attempts = getAttempts();
+  const rec = attempts[email] || { count: 0, lockedUntil: null };
+  if (rec.lockedUntil && new Date(rec.lockedUntil) > new Date()) {
+    alertBox.textContent = 'Account locked due to too many failed attempts. Try again later.';
+    alertBox.classList.remove('hidden');
+    return;
+  }
+
+  const state = getState();
+  const user = state.users.find(u => u.email === email);
+
+  // INTENTIONAL DEFECT #1: weak password "weak" is accepted for any user — violates FR-AUTH-02
+  // The "correct" password is Welcome@2026! but the app also accepts "weak".
+  const validPwd = (pwd === 'Welcome@2026!') || (pwd === 'weak');
+
+  if (!user || !validPwd) {
+    rec.count = (rec.count || 0) + 1;
+    if (rec.count >= 5) {
+      rec.lockedUntil = new Date(Date.now() + 30*60*1000).toISOString();
+      alertBox.textContent = 'Account locked for 30 minutes due to 5 failed login attempts.';
+    } else {
+      alertBox.textContent = `Invalid email or password. (${rec.count}/5 attempts)`;
+    }
+    attempts[email] = rec;
+    setAttempts(attempts);
+    alertBox.classList.remove('hidden');
+    return;
+  }
+
+  // success → reset attempts
+  delete attempts[email];
+  setAttempts(attempts);
+  alertBox.classList.add('hidden');
+
+  // MFA for officers, senior officers, admins
+  if (['Officer', 'Senior Officer', 'Admin'].includes(user.role)) {
+    // INTENTIONAL DEFECT #2: MFA is NOT enforced for Auditor — violates FR-AUTH-05
+    // (Auditor should also require MFA but doesn't.)
+    sessionStorage.setItem('pending_mfa', user.id);
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('mfa-form').classList.remove('hidden');
+    return;
+  }
+
+  finalizeLogin(user);
+}
+
+function doMfa() {
+  const code = document.getElementById('mfa-code').value.trim();
+  const userId = sessionStorage.getItem('pending_mfa');
+  if (code !== '123456') {
+    document.getElementById('auth-alert').textContent = 'Invalid TOTP code.';
+    document.getElementById('auth-alert').classList.remove('hidden');
+    return;
+  }
+  const state = getState();
+  const user = state.users.find(u => u.id === userId);
+  sessionStorage.removeItem('pending_mfa');
+  finalizeLogin(user);
+}
+
+function finalizeLogin(user) {
+  setSession({ userId: user.id, role: user.role, name: user.name, loginAt: new Date().toISOString() });
+  audit('LOGIN', 'auth', null, { email: user.email });
+  document.getElementById('screen-auth').classList.add('hidden');
+  document.getElementById('screen-app').classList.remove('hidden');
+  initAppShell();
+  navigate('dashboard');
+}
+
+function doForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) {
+    toast('Email is required', 'error'); return;
+  }
+  toast('If the email is registered, a reset link has been sent. Valid for 30 minutes.', 'success');
+  showLogin();
+}
+
+function doLogout() {
+  audit('LOGOUT', 'auth', null, null);
+  clearSession();
+  document.getElementById('screen-app').classList.add('hidden');
+  document.getElementById('screen-auth').classList.remove('hidden');
+  showLogin();
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+// ----- App shell -----
+function initAppShell() {
+  const session = getSession();
+  const state = getState();
+  const user = state.users.find(u => u.id === session.userId);
+  document.getElementById('user-name').textContent = user.name;
+  document.getElementById('user-role').textContent = user.role;
+  document.getElementById('user-avatar').textContent = user.name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+
+  // role-based nav visibility
+  document.querySelectorAll('.nav-officer').forEach(el => el.classList.toggle('hidden', !['Officer','Senior Officer'].includes(user.role)));
+  document.querySelectorAll('.nav-admin').forEach(el => el.classList.toggle('hidden', user.role !== 'Admin'));
+
+  refreshNotifBadge();
+}
+
+function navigate(page, params) {
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === page);
+  });
+  const content = document.getElementById('content');
+  const session = getSession();
+  if (!session) { doLogout(); return; }
+
+  const renderers = {
+    'dashboard': renderDashboard,
+    'projects': renderProjects,
+    'project-detail': () => renderProjectDetail(params),
+    'project-create': renderProjectCreate,
+    'review-queue': renderReviewQueue,
+    'users': renderUsers,
+    'rules': renderRules,
+    'audit': renderAuditLog,
+    'compare': () => renderCompare(params),
+    'rule-check': () => renderRuleCheck(params)
+  };
+  const fn = renderers[page] || renderDashboard;
+  content.innerHTML = '';
+  fn();
+}
+
+function setBreadcrumb(parts) {
+  const b = document.getElementById('breadcrumb');
+  const last = parts[parts.length-1];
+  const prefix = parts.slice(0,-1).join(' / ');
+  b.innerHTML = (prefix ? prefix + ' / ' : '') + '<b>' + last + '</b>';
+}
+
+// ----- Page: Dashboard -----
+function renderDashboard() {
+  setBreadcrumb(['Workspace', 'Dashboard']);
+  const session = getSession();
+  const state = getState();
+  const user = state.users.find(u => u.id === session.userId);
+
+  let myProjects = [];
+  if (user.role === 'QP') myProjects = state.projects.filter(p => p.qpId === user.id);
+  else if (['Officer','Senior Officer'].includes(user.role)) myProjects = state.projects.filter(p => p.state === 'Submitted' || p.state === 'Under Review' || p.state === 'RFI Raised');
+  else myProjects = state.projects;
+
+  const counts = {
+    total: myProjects.length,
+    draft: myProjects.filter(p => p.state === 'Draft').length,
+    submitted: myProjects.filter(p => p.state === 'Submitted' || p.state === 'Under Review').length,
+    approved: myProjects.filter(p => p.state === 'Approved').length
+  };
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Welcome, ${escapeHtml(user.name)}</div>
+        <div class="page-subtitle">Last login ${formatDate(session.loginAt)}</div>
+      </div>
+      ${user.role === 'QP' ? `<button data-testid="dash-create-project" class="btn btn-orange" onclick="navigate('project-create')">+ New Project</button>` : ''}
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">My Projects</div><div class="stat-value" data-testid="stat-total">${counts.total}</div></div>
+      <div class="stat-card"><div class="stat-label">Draft</div><div class="stat-value" data-testid="stat-draft">${counts.draft}</div></div>
+      <div class="stat-card"><div class="stat-label">In Review</div><div class="stat-value" data-testid="stat-review">${counts.submitted}</div></div>
+      <div class="stat-card"><div class="stat-label">Approved</div><div class="stat-value" data-testid="stat-approved">${counts.approved}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Recent Projects</div>
+      <table class="data-table" data-testid="recent-projects-table">
+        <thead><tr><th>Project No.</th><th>Name</th><th>Building Type</th><th>GFA (sqm)</th><th>State</th><th>Updated</th></tr></thead>
+        <tbody>
+          ${myProjects.slice(0,5).map(p => `
+            <tr class="clickable" data-testid="row-${p.id}" onclick="navigate('project-detail','${p.id}')">
+              <td><b>${p.number}</b></td>
+              <td>${escapeHtml(p.name)}</td>
+              <td>${p.buildingType}</td>
+              <td>${p.gfa.toLocaleString()}</td>
+              <td>${stateBadge(p.state)}</td>
+              <td>${formatDate(p.submittedAt || p.createdAt)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      ${myProjects.length === 0 ? '<div class="empty-state">No projects yet.</div>' : ''}
+    </div>
+  `;
+}
+
+// ----- Page: Project list -----
+function renderProjects() {
+  setBreadcrumb(['Workspace', 'Projects']);
+  const session = getSession();
+  const state = getState();
+  const user = state.users.find(u => u.id === session.userId);
+
+  let myProjects = [];
+  if (user.role === 'QP') myProjects = state.projects.filter(p => p.qpId === user.id);
+  else myProjects = state.projects;
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Projects</div>
+        <div class="page-subtitle">${myProjects.length} project${myProjects.length !== 1 ? 's' : ''}</div>
+      </div>
+      ${user.role === 'QP' ? `<button data-testid="projects-create-btn" class="btn btn-orange" onclick="navigate('project-create')">+ New Project</button>` : ''}
+    </div>
+
+    <div class="card">
+      <div class="filter-bar">
+        <input data-testid="project-search" type="text" class="form-control" placeholder="Search by name or project number" oninput="filterProjects()">
+        <select data-testid="project-state-filter" class="form-control" onchange="filterProjects()">
+          <option value="">All States</option>
+          <option>Draft</option><option>Submitted</option><option>Under Review</option>
+          <option>RFI Raised</option><option>Approved</option><option>Rejected</option><option>Withdrawn</option>
+        </select>
+        <select data-testid="project-type-filter" class="form-control" onchange="filterProjects()">
+          <option value="">All Types</option>
+          <option>Residential</option><option>Commercial</option>
+          <option>Industrial</option><option>Institutional</option><option>Mixed-Use</option>
+        </select>
+      </div>
+
+      <table class="data-table" id="projects-table">
+        <thead><tr><th>Project No.</th><th>Name</th><th>Type</th><th>GFA</th><th>Storeys</th><th>State</th><th>Submitted</th></tr></thead>
+        <tbody id="projects-tbody"></tbody>
+      </table>
+    </div>
+  `;
+  filterProjects();
+}
+
+function filterProjects() {
+  const session = getSession();
+  const state = getState();
+  const user = state.users.find(u => u.id === session.userId);
+  const search = (document.querySelector('[data-testid="project-search"]').value || '').toLowerCase();
+  const stateF = document.querySelector('[data-testid="project-state-filter"]').value;
+  const typeF = document.querySelector('[data-testid="project-type-filter"]').value;
+
+  let list = user.role === 'QP' ? state.projects.filter(p => p.qpId === user.id) : state.projects;
+  list = list.filter(p =>
+    (!search || p.name.toLowerCase().includes(search) || p.number.toLowerCase().includes(search)) &&
+    (!stateF || p.state === stateF) &&
+    (!typeF || p.buildingType === typeF)
+  );
+
+  const tbody = document.getElementById('projects-tbody');
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No projects match your filter.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(p => `
+    <tr class="clickable" data-testid="project-row-${p.id}" onclick="navigate('project-detail','${p.id}')">
+      <td><b>${p.number}</b></td>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${p.buildingType}</td>
+      <td>${p.gfa.toLocaleString()}</td>
+      <td>${p.storeys}</td>
+      <td>${stateBadge(p.state)}</td>
+      <td>${p.submittedAt ? formatDate(p.submittedAt) : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+// ----- Page: Create project -----
+function renderProjectCreate() {
+  setBreadcrumb(['Workspace', 'Projects', 'New Project']);
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">New Project</div>
+        <div class="page-subtitle">Project number will be auto-generated on save</div>
+      </div>
+      <button class="btn btn-secondary" onclick="navigate('projects')">Cancel</button>
+    </div>
+
+    <div class="card" style="max-width: 800px;">
+      <form id="project-form" onsubmit="event.preventDefault(); saveProject();">
+        <div class="form-group">
+          <label class="form-label">Project Name <span class="required">*</span></label>
+          <input id="pf-name" data-testid="pf-name" type="text" class="form-control" maxlength="120">
+          <div class="form-error" data-error="name"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Address <span class="required">*</span></label>
+            <input id="pf-address" data-testid="pf-address" type="text" class="form-control">
+            <div class="form-error" data-error="address"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lot Number <span class="required">*</span></label>
+            <input id="pf-lot" data-testid="pf-lot" type="text" class="form-control">
+            <div class="form-error" data-error="lot"></div>
+          </div>
+        </div>
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">Building Type <span class="required">*</span></label>
+            <select id="pf-type" data-testid="pf-type" class="form-control">
+              <option value="">— Select —</option>
+              <option>Residential</option><option>Commercial</option>
+              <option>Industrial</option><option>Institutional</option><option>Mixed-Use</option>
+            </select>
+            <div class="form-error" data-error="type"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">GFA (sqm) <span class="required">*</span></label>
+            <input id="pf-gfa" data-testid="pf-gfa" type="number" step="0.01" min="50" max="500000" class="form-control" placeholder="50.00 to 500,000.00">
+            <div class="form-error" data-error="gfa"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Storeys <span class="required">*</span></label>
+            <input id="pf-storeys" data-testid="pf-storeys" type="number" min="1" class="form-control">
+            <div class="form-error" data-error="storeys"></div>
+          </div>
+        </div>
+
+        <div class="form-group" style="max-width: 200px;">
+          <label class="form-label">Basements</label>
+          <input id="pf-basements" data-testid="pf-basements" type="number" min="0" max="10" class="form-control" value="0">
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 24px;">
+          <button data-testid="pf-save" class="btn btn-orange" type="submit">Save Draft</button>
+          <button class="btn btn-secondary" type="button" onclick="navigate('projects')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+function saveProject() {
+  document.querySelectorAll('.form-error').forEach(e => { e.textContent=''; e.classList.remove('show'); });
+
+  const name = document.getElementById('pf-name').value.trim();
+  const address = document.getElementById('pf-address').value.trim();
+  const lot = document.getElementById('pf-lot').value.trim();
+  const type = document.getElementById('pf-type').value;
+  const gfa = parseFloat(document.getElementById('pf-gfa').value);
+  const storeys = parseInt(document.getElementById('pf-storeys').value);
+  const basements = parseInt(document.getElementById('pf-basements').value || '0');
+
+  let ok = true;
+  function err(field, msg) {
+    const el = document.querySelector(`[data-error="${field}"]`);
+    el.textContent = msg; el.classList.add('show'); ok = false;
+  }
+
+  if (!name || name.length < 3) err('name', 'Project name must be at least 3 characters.');
+  if (!address) err('address', 'Address is required.');
+  if (!lot) err('lot', 'Lot number is required.');
+  if (!type) err('type', 'Building type is required.');
+  if (isNaN(gfa) || gfa < 50 || gfa > 500000) err('gfa', 'GFA must be between 50.00 and 500,000.00 sqm.');
+  if (isNaN(storeys) || storeys < 1) err('storeys', 'Storeys must be at least 1.');
+
+  // Duplicate name check (per QP)
+  const session = getSession();
+  const state = getState();
+  // INTENTIONAL DEFECT #3: Duplicate name check is case-sensitive — violates FR-PROJ-04
+  // FRD says "duplicates rejected"; the app only blocks exact-case match.
+  // So "Riverside Tower A" passes when "riverside tower a" already exists.
+  const dup = state.projects.find(p => p.qpId === session.userId && p.name === name);
+  if (dup) err('name', 'A project with this name already exists.');
+
+  if (!ok) return;
+
+  // Generate project number
+  const year = new Date().getFullYear();
+  const seq = state.projects.length + 1;
+  const number = `PRJ-${year}-${String(seq).padStart(5, '0')}`;
+
+  const newProj = {
+    id: 'p' + Date.now(), number, name, address, lot,
+    buildingType: type, gfa, storeys, basements,
+    state: 'Draft', qpId: session.userId, officerId: null,
+    drawings: [], rules: [], comments: [],
+    createdAt: new Date().toISOString(), submittedAt: null
+  };
+  state.projects.push(newProj);
+  setState(state);
+  audit('PROJECT_CREATE', newProj.id, null, newProj);
+  toast('Project created: ' + number, 'success');
+  navigate('project-detail', newProj.id);
+}
+
+// ----- Page: Project detail -----
+function renderProjectDetail(projectId) {
+  const state = getState();
+  const session = getSession();
+  const user = state.users.find(u => u.id === session.userId);
+  const p = state.projects.find(p => p.id === projectId);
+  if (!p) {
+    document.getElementById('content').innerHTML = '<div class="empty-state">Project not found.</div>';
+    return;
+  }
+
+  setBreadcrumb(['Projects', p.number]);
+
+  const isQP = user.role === 'QP' && p.qpId === user.id;
+  const isOfficer = ['Officer','Senior Officer'].includes(user.role);
+  const isSenior = user.role === 'Senior Officer';
+
+  // Workflow buttons by role and state
+  let actions = '';
+  if (isQP && p.state === 'Draft') {
+    const hasArch = p.drawings.some(d => d.discipline === 'Architectural' && d.drawingType === 'Plan');
+    actions = `<button data-testid="action-submit" class="btn btn-orange" ${!hasArch?'disabled title="At least one Architectural Plan drawing required"':''} onclick="submitProject('${p.id}')">Submit for Review</button>`;
+  }
+  if (isOfficer && (p.state === 'Submitted' || p.state === 'Under Review')) {
+    actions = `
+      <button data-testid="action-rules" class="btn btn-primary" onclick="navigate('rule-check','${p.id}')">Run Rule Check</button>
+      <button data-testid="action-rfi" class="btn btn-secondary" onclick="raiseRfi('${p.id}')">Raise RFI</button>
+      ${isSenior ? `
+        <button data-testid="action-approve" class="btn btn-success" onclick="approveProject('${p.id}')">Approve</button>
+        <button data-testid="action-reject" class="btn btn-danger" onclick="rejectProject('${p.id}')">Reject</button>
+      ` : ''}
+    `;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">${escapeHtml(p.name)} ${stateBadge(p.state)}</div>
+        <div class="page-subtitle">${p.number} · ${p.buildingType} · ${p.storeys} storeys · ${p.gfa.toLocaleString()} sqm</div>
+      </div>
+      <div style="display: flex; gap: 8px;">${actions}</div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
+      <div class="tab" data-tab="drawings" onclick="switchTab('drawings')">Drawings (${p.drawings.length})</div>
+      <div class="tab" data-tab="rules" onclick="switchTab('rules')">Rule Results (${p.rules.length})</div>
+      <div class="tab" data-tab="comments" onclick="switchTab('comments')">Comments (${p.comments.length})</div>
+    </div>
+
+    <div id="tab-overview">
+      <div class="card">
+        <div class="card-header">Project Details</div>
+        <table class="data-table">
+          <tr><td><b>Project Number</b></td><td>${p.number}</td></tr>
+          <tr><td><b>Address</b></td><td>${escapeHtml(p.address)}</td></tr>
+          <tr><td><b>Lot Number</b></td><td>${p.lot}</td></tr>
+          <tr><td><b>Building Type</b></td><td>${p.buildingType}</td></tr>
+          <tr><td><b>GFA</b></td><td>${p.gfa.toLocaleString()} sqm</td></tr>
+          <tr><td><b>Storeys</b></td><td>${p.storeys} (above) + ${p.basements || 0} (basement)</td></tr>
+          <tr><td><b>State</b></td><td>${stateBadge(p.state)}</td></tr>
+          <tr><td><b>Submitted</b></td><td>${p.submittedAt ? formatDate(p.submittedAt) : '—'}</td></tr>
+          ${p.decision ? `<tr><td><b>Decision</b></td><td>${p.decision} — ${formatDate(p.decisionAt)}</td></tr>` : ''}
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-drawings" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <span>Drawings</span>
+          ${isQP && p.state === 'Draft' ? `<button data-testid="upload-btn" class="btn btn-orange btn-sm" onclick="openUploadModal('${p.id}')">+ Upload Drawing</button>` : ''}
+          ${p.drawings.length >= 2 ? `<button data-testid="compare-btn" class="btn btn-secondary btn-sm" onclick="navigate('compare','${p.id}')">Compare Revisions</button>` : ''}
+        </div>
+        ${p.drawings.length === 0 ? '<div class="empty-state">No drawings uploaded yet.</div>' : `
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Discipline</th><th>Type</th><th>Floor</th><th>Rev</th><th>Size</th><th>Uploaded</th></tr></thead>
+            <tbody>
+              ${p.drawings.map(d => `
+                <tr data-testid="drawing-row-${d.id}">
+                  <td><b>${escapeHtml(d.name)}</b></td>
+                  <td>${d.discipline}</td>
+                  <td>${d.drawingType}</td>
+                  <td>${d.floor}</td>
+                  <td>${d.revision}</td>
+                  <td>${formatSize(d.size)}</td>
+                  <td>${formatDate(d.uploadedAt)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `}
+      </div>
+
+      ${p.drawings.length > 0 ? `
+        <div class="card">
+          <div class="card-header">
+            <span>3D Viewer · Interactive</span>
+            <span style="font-size:11px;color:var(--grey-500);font-weight:400;">Click any element to inspect properties</span>
+          </div>
+          <div class="viewer-container">
+            <div class="viewer-canvas" style="background: radial-gradient(circle at 50% 40%, #2a2a4a 0%, #14142a 100%);">
+
+              <div class="viewer-toolbar">
+                <button data-testid="vw-orbit" class="viewer-tool active" title="Orbit (drag)" onclick="setViewerTool('orbit')">↻</button>
+                <button data-testid="vw-pan" class="viewer-tool" title="Pan (drag)" onclick="setViewerTool('pan')">✥</button>
+                <button data-testid="vw-zoom-in" class="viewer-tool" title="Zoom In" onclick="zoomViewer(0.85)">＋</button>
+                <button data-testid="vw-zoom-out" class="viewer-tool" title="Zoom Out" onclick="zoomViewer(1.18)">－</button>
+                <button data-testid="vw-fit" class="viewer-tool" title="Fit to View" onclick="fitViewer()">⊡</button>
+                <button data-testid="vw-isolate" class="viewer-tool" title="Isolate Selected" onclick="isolateSelected()">◉</button>
+                <button data-testid="vw-hide" class="viewer-tool" title="Hide Selected" onclick="hideSelected()">⊘</button>
+                <button data-testid="vw-show-all" class="viewer-tool" title="Show All" onclick="showAllElements()">⊞</button>
+                <button data-testid="vw-measure" class="viewer-tool" title="Measure (click 2 points)" onclick="setViewerTool('measure')">📏</button>
+                <button data-testid="vw-clear-measure" class="viewer-tool" title="Clear Measurement" onclick="clearMeasurement()">✕</button>
+              </div>
+
+              <svg id="bim-svg" data-testid="bim-svg" viewBox="0 0 940 520" xmlns="http://www.w3.org/2000/svg"
+                   style="width:100%;height:100%;display:block;"
+                   onclick="canvasClicked(event)" onmousedown="viewerMouseDown(event)"
+                   onmousemove="viewerMouseMove(event)" onmouseup="viewerMouseUp(event)" onmouseleave="viewerMouseUp(event)">
+                <g id="bim-root" transform="translate(0,0) scale(1)">
+                  <!-- Ground plane -->
+                  <polygon points="80,420 880,420 740,490 220,490" fill="#0f1024" opacity="0.6"/>
+                  <!-- Grid lines on ground -->
+                  <g stroke="#2a2c50" stroke-width="0.5" opacity="0.5">
+                    <line x1="220" y1="490" x2="320" y2="420"/>
+                    <line x1="380" y1="490" x2="480" y2="420"/>
+                    <line x1="540" y1="490" x2="640" y2="420"/>
+                    <line x1="700" y1="490" x2="800" y2="420"/>
+                  </g>
+                  <g class="bim-el bim-structural" data-guid="COL-L01-001" data-discipline="Structural" data-element='{"guid":"COL-L01-001","type":"Column","discipline":"Structural","storey":"L01","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="470,128 478.66025403784437,133 470,138 461.33974596215563,133"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="478.66025403784437,193 470,198 470,138 478.66025403784437,133" fill="#6e7787"/>
+      <polygon class="face-front" points="461.33974596215563,193 470,198 470,138 461.33974596215563,133" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WAL-L01-002" data-discipline="Architectural" data-element='{"guid":"WAL-L01-002","type":"Wall","discipline":"Architectural","storey":"L01","material":"Brick + Plaster","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="466.53589838486226,134 470,136 308.9192748960944,228.99999999999997 305.4551732809566,227"   fill="#7c93c9"/>
+      <polygon class="face-right" points="470,192 308.9192748960944,285 308.9192748960944,228.99999999999997 470,136" fill="#5a73b5"/>
+      <polygon class="face-front" points="305.4551732809566,283 308.9192748960944,285 308.9192748960944,228.99999999999997 305.4551732809566,227" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L00-001" data-discipline="Structural" data-element='{"guid":"COL-L00-001","type":"Column","discipline":"Structural","storey":"L00","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="470,190 478.66025403784437,195 470,200 461.33974596215563,195"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="478.66025403784437,259 470,264 470,200 478.66025403784437,195" fill="#6e7787"/>
+      <polygon class="face-front" points="461.33974596215563,259 470,264 470,200 461.33974596215563,195" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WAL-L01-001" data-discipline="Architectural" data-element='{"guid":"WAL-L01-001","type":"Wall","discipline":"Architectural","storey":"L01","material":"Brick + Plaster","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="478.66025403784437,137 703.8268590217984,267 700.3627574066606,269 475.19615242270663,139"   fill="#7c93c9"/>
+      <polygon class="face-right" points="703.8268590217984,323 700.3627574066606,325 700.3627574066606,269 703.8268590217984,267" fill="#5a73b5"/>
+      <polygon class="face-front" points="475.19615242270663,195 700.3627574066606,325 700.3627574066606,269 475.19615242270663,139" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L01-005" data-discipline="Structural" data-element='{"guid":"COL-L01-005","type":"Column","discipline":"Structural","storey":"L01","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="591.2435565298215,198 599.9038105676658,203 591.2435565298215,208 582.5833024919771,203"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="599.9038105676658,263 591.2435565298215,268 591.2435565298215,208 599.9038105676658,203" fill="#6e7787"/>
+      <polygon class="face-front" points="582.5833024919771,263 591.2435565298215,268 591.2435565298215,208 582.5833024919771,203" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="ROF-L02-001" data-discipline="Architectural" data-element='{"guid":"ROF-L02-001","type":"Roof Slab","discipline":"Architectural","storey":"L02","material":"Concrete + Waterproofing","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="0.55">
+      <polygon class="face-top"   points="470,114 722.8794179050561,260 539.282032302755,365.99999999999994 286.40261439769904,219.99999999999997"   fill="#7c93c9"/>
+      <polygon class="face-right" points="722.8794179050561,268 539.282032302755,373.99999999999994 539.282032302755,365.99999999999994 722.8794179050561,260" fill="#5a73b5"/>
+      <polygon class="face-front" points="286.40261439769904,227.99999999999997 539.282032302755,373.99999999999994 539.282032302755,365.99999999999994 286.40261439769904,219.99999999999997" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-mep" data-guid="DUC-L01-002" data-discipline="MEP" data-element='{"guid":"DUC-L01-002","type":"HVAC Duct Branch","discipline":"MEP","storey":"L01","material":"Galvanized Steel Ø 250 mm","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="442.28718707889794,230.99999999999997 449.2153903091735,235 388.5936120442628,270 381.66540881398726,266"   fill="#d97706"/>
+      <polygon class="face-right" points="449.2153903091735,241 388.5936120442628,276 388.5936120442628,270 449.2153903091735,235" fill="#b85f04"/>
+      <polygon class="face-front" points="381.66540881398726,272 388.5936120442628,276 388.5936120442628,270 381.66540881398726,266" fill="#964f03"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L01-003" data-discipline="Structural" data-element='{"guid":"COL-L01-003","type":"Column","discipline":"Structural","storey":"L01","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="305.4551732809566,223 314.11542731880104,228 305.4551732809566,233 296.79491924311225,228"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="314.11542731880104,288 305.4551732809566,293 305.4551732809566,233 314.11542731880104,228" fill="#6e7787"/>
+      <polygon class="face-front" points="296.79491924311225,288 305.4551732809566,293 305.4551732809566,233 296.79491924311225,228" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-mep" data-guid="DUC-L01-001" data-discipline="MEP" data-element='{"guid":"DUC-L01-001","type":"HVAC Duct","discipline":"MEP","storey":"L01","material":"Galvanized Steel Ø 400 mm","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="400.7179676972449,193.99999999999997 608.5640646055102,313.99999999999994 598.171759760097,319.99999999999994 390.3256628518316,199.99999999999997"   fill="#d97706"/>
+      <polygon class="face-right" points="608.5640646055102,322 598.171759760097,328 598.171759760097,319.99999999999994 608.5640646055102,313.99999999999994" fill="#b85f04"/>
+      <polygon class="face-front" points="390.3256628518316,208 598.171759760097,328 598.171759760097,319.99999999999994 390.3256628518316,199.99999999999997" fill="#964f03"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WAL-L00-002" data-discipline="Architectural" data-element='{"guid":"WAL-L00-002","type":"Wall","discipline":"Architectural","storey":"L00","material":"Brick + Plaster","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="466.53589838486226,196 470,198 308.9192748960944,291 305.4551732809566,289"   fill="#7c93c9"/>
+      <polygon class="face-right" points="470,258 308.9192748960944,351 308.9192748960944,291 470,198" fill="#5a73b5"/>
+      <polygon class="face-front" points="305.4551732809566,349 308.9192748960944,351 308.9192748960944,291 305.4551732809566,289" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WAL-L01-004" data-discipline="Architectural" data-element='{"guid":"WAL-L01-004","type":"Partition Wall","discipline":"Architectural","storey":"L01","material":"Gypsum Board","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="393.78976446696936,187.99999999999997 618.9563694509235,317.99999999999994 615.4922678357857,319.99999999999994 390.3256628518316,190"   fill="#7c93c9"/>
+      <polygon class="face-right" points="618.9563694509235,371.99999999999994 615.4922678357857,374 615.4922678357857,319.99999999999994 618.9563694509235,317.99999999999994" fill="#5a73b5"/>
+      <polygon class="face-front" points="390.3256628518316,244 615.4922678357857,374 615.4922678357857,319.99999999999994 390.3256628518316,190" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="DOR-L01-001" data-discipline="Architectural" data-element='{"guid":"DOR-L01-001","type":"Door","discipline":"Architectural","storey":"L01","material":"Timber","width":"0.90 m","height":"2.10 m","size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="498.5788383248865,259.5 514.1672955930064,268.5 508.97114317029974,271.5 493.38268590217984,262.5"   fill="#92400e"/>
+      <polygon class="face-right" points="514.1672955930064,310.5 508.97114317029974,313.5 508.97114317029974,271.5 514.1672955930064,268.5" fill="#78350f"/>
+      <polygon class="face-front" points="493.38268590217984,304.5 508.97114317029974,313.5 508.97114317029974,271.5 493.38268590217984,262.5" fill="#5d2c08"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WAL-L00-001" data-discipline="Architectural" data-element='{"guid":"WAL-L00-001","type":"Wall","discipline":"Architectural","storey":"L00","material":"Brick + Plaster","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="478.66025403784437,199 703.8268590217984,329 700.3627574066606,331 475.19615242270663,201"   fill="#7c93c9"/>
+      <polygon class="face-right" points="703.8268590217984,389 700.3627574066606,391 700.3627574066606,331 703.8268590217984,329" fill="#5a73b5"/>
+      <polygon class="face-front" points="475.19615242270663,261 700.3627574066606,391 700.3627574066606,331 475.19615242270663,201" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L00-005" data-discipline="Structural" data-element='{"guid":"COL-L00-005","type":"Column","discipline":"Structural","storey":"L00","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="591.2435565298215,260 599.9038105676658,265 591.2435565298215,270 582.5833024919771,265"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="599.9038105676658,329 591.2435565298215,334 591.2435565298215,270 599.9038105676658,265" fill="#6e7787"/>
+      <polygon class="face-front" points="582.5833024919771,329 591.2435565298215,334 591.2435565298215,270 582.5833024919771,265" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L01-002" data-discipline="Structural" data-element='{"guid":"COL-L01-002","type":"Column","discipline":"Structural","storey":"L01","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="703.8268590217984,263 712.4871130596429,268 703.8268590217984,273 695.1666049839541,268"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="712.4871130596429,328 703.8268590217984,333 703.8268590217984,273 712.4871130596429,268" fill="#6e7787"/>
+      <polygon class="face-front" points="695.1666049839541,328 703.8268590217984,333 703.8268590217984,273 695.1666049839541,268" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="SLB-L01-001" data-discipline="Structural" data-element='{"guid":"SLB-L01-001","type":"Floor Slab","discipline":"Structural","storey":"L01","material":"Reinforced Concrete C30","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="470,188 712.4871130596429,328 539.282032302755,428 296.79491924311225,288"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="712.4871130596429,334 539.282032302755,434 539.282032302755,428 712.4871130596429,328" fill="#6e7787"/>
+      <polygon class="face-front" points="296.79491924311225,294 539.282032302755,434 539.282032302755,428 296.79491924311225,288" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-landscape" data-guid="LND-001" data-discipline="Landscape" data-element='{"guid":"LND-001","type":"Tree","discipline":"Landscape","storey":"L00","material":"Live Vegetation","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="244.83339501604593,280 251.76159824632146,284 244.83339501604593,288 237.90519178577043,284"   fill="#22c55e"/>
+      <polygon class="face-right" points="251.76159824632146,354 244.83339501604593,358 244.83339501604593,288 251.76159824632146,284" fill="#16a34a"/>
+      <polygon class="face-front" points="237.90519178577043,354 244.83339501604593,358 244.83339501604593,288 237.90519178577043,284" fill="#15803d"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L00-003" data-discipline="Structural" data-element='{"guid":"COL-L00-003","type":"Column","discipline":"Structural","storey":"L00","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="305.4551732809566,285 314.11542731880104,290 305.4551732809566,295 296.79491924311225,290"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="314.11542731880104,354 305.4551732809566,359 305.4551732809566,295 314.11542731880104,290" fill="#6e7787"/>
+      <polygon class="face-front" points="296.79491924311225,354 305.4551732809566,359 305.4551732809566,295 296.79491924311225,290" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L01-006" data-discipline="Structural" data-element='{"guid":"COL-L01-006","type":"Column","discipline":"Structural","storey":"L01","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="426.69872981077805,293 435.3589838486225,298 426.69872981077805,303 418.0384757729337,298"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="435.3589838486225,358 426.69872981077805,363 426.69872981077805,303 435.3589838486225,298" fill="#6e7787"/>
+      <polygon class="face-front" points="418.0384757729337,358 426.69872981077805,363 426.69872981077805,303 418.0384757729337,298" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WAL-L01-003" data-discipline="Architectural" data-element='{"guid":"WAL-L01-003","type":"Wall","discipline":"Architectural","storey":"L01","material":"Brick + Plaster","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="705.5589098293674,272 709.0230114445051,274 547.9422863405995,367 544.4781847254617,365"   fill="#7c93c9"/>
+      <polygon class="face-right" points="709.0230114445051,330 547.9422863405995,423 547.9422863405995,367 709.0230114445051,274" fill="#5a73b5"/>
+      <polygon class="face-front" points="544.4781847254617,421 547.9422863405995,423 547.9422863405995,367 544.4781847254617,365" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L00-002" data-discipline="Structural" data-element='{"guid":"COL-L00-002","type":"Column","discipline":"Structural","storey":"L00","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="703.8268590217984,325 712.4871130596429,330 703.8268590217984,335 695.1666049839541,330"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="712.4871130596429,394 703.8268590217984,399 703.8268590217984,335 712.4871130596429,330" fill="#6e7787"/>
+      <polygon class="face-front" points="695.1666049839541,394 703.8268590217984,399 703.8268590217984,335 695.1666049839541,330" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="SLB-L00-001" data-discipline="Structural" data-element='{"guid":"SLB-L00-001","type":"Floor Slab","discipline":"Structural","storey":"L00","material":"Reinforced Concrete C30","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="470,254 712.4871130596429,394 539.282032302755,494 296.79491924311225,354"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="712.4871130596429,400 539.282032302755,500 539.282032302755,494 712.4871130596429,394" fill="#6e7787"/>
+      <polygon class="face-front" points="296.79491924311225,360 539.282032302755,500 539.282032302755,494 296.79491924311225,354" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-civil" data-guid="SIT-001" data-discipline="Civil" data-element='{"guid":"SIT-001","type":"Site Boundary","discipline":"Civil","storey":"L00","material":"Concrete Paving","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="470,200 816.4101615137755,400 539.282032302755,560 192.8718707889796,360"   fill="#6b7280"/>
+      <polygon class="face-right" points="816.4101615137755,401 539.282032302755,561 539.282032302755,560 816.4101615137755,400" fill="#4b5563"/>
+      <polygon class="face-front" points="192.8718707889796,361 539.282032302755,561 539.282032302755,560 192.8718707889796,360" fill="#374151"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WIN-L00-001" data-discipline="Architectural" data-element='{"guid":"WIN-L00-001","type":"Window","discipline":"Architectural","storey":"L00","material":"Aluminium Frame + Double-Glazed","width":null,"height":null,"size":"1.50 x 1.20 m"}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="670.9178936779898,362 674.3819952931275,364 648.4012331795943,378.99999999999994 644.9371315644566,377"   fill="#bae6fd"/>
+      <polygon class="face-right" points="674.3819952931275,388 648.4012331795943,402.99999999999994 648.4012331795943,378.99999999999994 674.3819952931275,364" fill="#7dd3fc"/>
+      <polygon class="face-front" points="644.9371315644566,401 648.4012331795943,402.99999999999994 648.4012331795943,378.99999999999994 644.9371315644566,377" fill="#38bdf8"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L00-006" data-discipline="Structural" data-element='{"guid":"COL-L00-006","type":"Column","discipline":"Structural","storey":"L00","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="426.69872981077805,355 435.3589838486225,360 426.69872981077805,365 418.0384757729337,360"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="435.3589838486225,424 426.69872981077805,429 426.69872981077805,365 435.3589838486225,360" fill="#6e7787"/>
+      <polygon class="face-front" points="418.0384757729337,424 426.69872981077805,429 426.69872981077805,365 418.0384757729337,360" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L01-004" data-discipline="Structural" data-element='{"guid":"COL-L01-004","type":"Column","discipline":"Structural","storey":"L01","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="539.282032302755,358 547.9422863405995,363 539.282032302755,368 530.6217782649107,363"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="547.9422863405995,423 539.282032302755,428 539.282032302755,368 547.9422863405995,363" fill="#6e7787"/>
+      <polygon class="face-front" points="530.6217782649107,423 539.282032302755,428 539.282032302755,368 530.6217782649107,363" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="DOR-L00-001" data-discipline="Architectural" data-element='{"guid":"DOR-L00-001","type":"Door","discipline":"Architectural","storey":"L00","material":"Aluminium + Glass","width":"1.20 m","height":"2.20 m","size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="409.37822173508926,365 430.16283142591584,376.99999999999994 427.5647552145625,378.5 406.780145523736,366.5"   fill="#92400e"/>
+      <polygon class="face-right" points="430.16283142591584,420.99999999999994 427.5647552145625,422.5 427.5647552145625,378.5 430.16283142591584,376.99999999999994" fill="#78350f"/>
+      <polygon class="face-front" points="406.780145523736,410.5 427.5647552145625,422.5 427.5647552145625,378.5 406.780145523736,366.5" fill="#5d2c08"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WAL-L00-003" data-discipline="Architectural" data-element='{"guid":"WAL-L00-003","type":"Wall","discipline":"Architectural","storey":"L00","material":"Brick + Plaster","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="705.5589098293674,334 709.0230114445051,336 547.9422863405995,429 544.4781847254617,427"   fill="#7c93c9"/>
+      <polygon class="face-right" points="709.0230114445051,396 547.9422863405995,489 547.9422863405995,429 709.0230114445051,336" fill="#5a73b5"/>
+      <polygon class="face-front" points="544.4781847254617,487 547.9422863405995,489 547.9422863405995,429 544.4781847254617,427" fill="#4a63a5"/>
+    </g>
+      <g class="bim-el bim-architectural" data-guid="WIN-L00-002" data-discipline="Architectural" data-element='{"guid":"WIN-L00-002","type":"Window","discipline":"Architectural","storey":"L00","material":"Aluminium Frame + Double-Glazed","width":null,"height":null,"size":"1.50 x 1.20 m"}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="601.6358613752348,402 605.0999629903724,403.99999999999994 579.1192008768393,418.99999999999994 575.6550992617015,417"   fill="#bae6fd"/>
+      <polygon class="face-right" points="605.0999629903724,427.99999999999994 579.1192008768393,442.99999999999994 579.1192008768393,418.99999999999994 605.0999629903724,403.99999999999994" fill="#7dd3fc"/>
+      <polygon class="face-front" points="575.6550992617015,441 579.1192008768393,442.99999999999994 579.1192008768393,418.99999999999994 575.6550992617015,417" fill="#38bdf8"/>
+    </g>
+      <g class="bim-el bim-structural" data-guid="COL-L00-004" data-discipline="Structural" data-element='{"guid":"COL-L00-004","type":"Column","discipline":"Structural","storey":"L00","material":"Reinforced Concrete C40","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="539.282032302755,420 547.9422863405995,425 539.282032302755,430 530.6217782649107,425"   fill="#9aa3b2"/>
+      <polygon class="face-right" points="547.9422863405995,489 539.282032302755,494 539.282032302755,430 547.9422863405995,425" fill="#6e7787"/>
+      <polygon class="face-front" points="530.6217782649107,489 539.282032302755,494 539.282032302755,430 530.6217782649107,425" fill="#525c6e"/>
+    </g>
+      <g class="bim-el bim-landscape" data-guid="LND-002" data-discipline="Landscape" data-element='{"guid":"LND-002","type":"Tree","discipline":"Landscape","storey":"L00","material":"Live Vegetation","width":null,"height":null,"size":null}' onclick="selectElement(this, event)" style="cursor:pointer;" opacity="1">
+      <polygon class="face-top"   points="556.6025403784439,459.99999999999994 563.5307436087194,463.99999999999994 556.6025403784438,467.99999999999994 549.6743371481683,463.99999999999994"   fill="#22c55e"/>
+      <polygon class="face-right" points="563.5307436087194,534 556.6025403784438,538 556.6025403784438,467.99999999999994 563.5307436087194,463.99999999999994" fill="#16a34a"/>
+      <polygon class="face-front" points="549.6743371481683,534 556.6025403784438,538 556.6025403784438,467.99999999999994 549.6743371481683,463.99999999999994" fill="#15803d"/>
+    </g>
+                  <!-- Measurement overlay layer -->
+                  <g id="measure-layer"></g>
+                </g>
+              </svg>
+
+              <div class="viewer-properties">
+                <h4 style="display:flex;justify-content:space-between;align-items:center;">
+                  <span>Layers</span>
+                  <span style="font-size:10px;opacity:0.5;" id="layer-count">12/12</span>
+                </h4>
+                <label class="layer-toggle"><input type="checkbox" data-testid="layer-arch" checked onchange="toggleLayer('Architectural', this.checked)"> <span style="display:inline-block;width:10px;height:10px;background:#5a73b5;border-radius:2px;"></span> Architectural</label>
+                <label class="layer-toggle"><input type="checkbox" data-testid="layer-struct" checked onchange="toggleLayer('Structural', this.checked)"> <span style="display:inline-block;width:10px;height:10px;background:#6e7787;border-radius:2px;"></span> Structural</label>
+                <label class="layer-toggle"><input type="checkbox" data-testid="layer-mep" checked onchange="toggleLayer('MEP', this.checked)"> <span style="display:inline-block;width:10px;height:10px;background:#b85f04;border-radius:2px;"></span> MEP</label>
+                <label class="layer-toggle"><input type="checkbox" data-testid="layer-civil" checked onchange="toggleLayer('Civil', this.checked)"> <span style="display:inline-block;width:10px;height:10px;background:#4b5563;border-radius:2px;"></span> Civil</label>
+                <label class="layer-toggle"><input type="checkbox" data-testid="layer-landscape" checked onchange="toggleLayer('Landscape', this.checked)"> <span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;"></span> Landscape</label>
+
+                <h4 style="margin-top:16px;">Selected Element</h4>
+                <div class="prop-row"><span>GUID</span><span data-testid="el-guid">—</span></div>
+                <div class="prop-row"><span>Type</span><span data-testid="el-type">—</span></div>
+                <div class="prop-row"><span>Discipline</span><span data-testid="el-discipline">—</span></div>
+                <div class="prop-row"><span>Storey</span><span data-testid="el-storey">—</span></div>
+                <div class="prop-row"><span>Material</span><span data-testid="el-material" style="text-align:right;max-width:140px;font-size:10px;">—</span></div>
+
+                <h4 style="margin-top:16px;">Measurement</h4>
+                <div class="prop-row"><span>Distance</span><span data-testid="measure-distance">—</span></div>
+
+                <h4 style="margin-top:16px;">View State</h4>
+                <div class="prop-row"><span>Tool</span><span data-testid="viewer-active-tool">orbit</span></div>
+                <div class="prop-row"><span>Visible</span><span data-testid="visible-count">31</span></div>
+                <div class="prop-row"><span>Total</span><span data-testid="total-count">31</span></div>
+              </div>
+
+              <div style="position:absolute;bottom:12px;left:12px;color:rgba(255,255,255,0.55);font-size:11px;">
+                Tools: Click element → properties · Drag → orbit · Measure → click 2 elements
+              </div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+    </div>
+
+    <div id="tab-rules" class="hidden">
+      <div class="card">
+        <div class="card-header">Rule Check Results</div>
+        ${p.rules.length === 0 ? '<div class="empty-state">No rule check has been run yet.</div>' :
+          p.rules.map(r => `
+            <div class="rule-card" data-testid="rule-${r.code}">
+              <div class="rule-status rule-${r.status.toLowerCase()}">${r.status === 'Pass' ? '✓' : r.status === 'Fail' ? '✕' : '!'}</div>
+              <div class="rule-body">
+                <div class="rule-title">${r.title}</div>
+                <div class="rule-meta">Element: ${r.element} · Measured: ${r.measured} · Required: ${r.required}</div>
+              </div>
+              ${r.status === 'Fail' && isSenior ? `<button data-testid="override-${r.code}" class="btn btn-secondary btn-sm" onclick="overrideRule('${p.id}','${r.code}')">Override</button>` : ''}
+              ${r.override ? `<span class="badge badge-amber">Overridden</span>` : ''}
+            </div>
+          `).join('')
+        }
+      </div>
+    </div>
+
+    <div id="tab-comments" class="hidden">
+      <div class="card">
+        <div class="card-header">Comments &amp; History</div>
+        ${p.comments.length === 0 ? '<div class="empty-state">No comments yet.</div>' :
+          p.comments.map(c => {
+            const author = state.users.find(u => u.id === c.userId);
+            return `<div style="padding: 12px; border-bottom: 1px solid var(--grey-100);">
+              <b>${author ? author.name : 'Unknown'}</b> <span style="color: var(--grey-500); font-size: 11px;">${formatDate(c.ts)}</span>
+              <div style="margin-top: 4px;">${escapeHtml(c.text)}</div>
+            </div>`;
+          }).join('')
+        }
+      </div>
+    </div>
+  `;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  ['overview','drawings','rules','comments'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
+  });
+}
+
+// ----- Project actions -----
+function submitProject(pid) {
+  const state = getState();
+  const p = state.projects.find(x => x.id === pid);
+  if (!p) return;
+  // INTENTIONAL DEFECT #4: System allows submission even if uploads are still in progress (not validated).
+  // FRD FR-WF-01 requires "no upload in progress" — not enforced.
+  p.state = 'Submitted';
+  p.submittedAt = new Date().toISOString();
+  // Round-robin officer assignment
+  const officers = state.users.filter(u => u.role === 'Officer');
+  if (officers.length > 0) p.officerId = officers[0].id;
+  setState(state);
+  audit('PROJECT_SUBMIT', pid, { state: 'Draft' }, { state: 'Submitted' });
+  notify(p.qpId, `Submission acknowledgement: ${p.number} received.`);
+  if (p.officerId) notify(p.officerId, `New submission assigned: ${p.name}.`);
+  toast('Project submitted for review', 'success');
+  refreshNotifBadge();
+  navigate('project-detail', pid);
+}
+
+function raiseRfi(pid) {
+  showModal({
+    title: 'Raise Request for Information',
+    body: `
+      <div class="form-group">
+        <label class="form-label">RFI Description <span class="required">*</span></label>
+        <textarea id="rfi-text" data-testid="rfi-text" class="form-control" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Response Deadline (days)</label>
+        <input id="rfi-deadline" data-testid="rfi-deadline" type="number" min="7" max="60" value="14" class="form-control">
+        <div style="font-size: 11px; color: var(--grey-500); margin-top: 4px;">Between 7 and 60 calendar days.</div>
+      </div>
+    `,
+    onConfirm: () => {
+      const text = document.getElementById('rfi-text').value.trim();
+      const deadline = parseInt(document.getElementById('rfi-deadline').value);
+      if (!text) { toast('RFI description required', 'error'); return false; }
+      if (deadline < 7 || deadline > 60) { toast('Deadline must be 7–60 days', 'error'); return false; }
+      const state = getState();
+      const p = state.projects.find(x => x.id === pid);
+      p.state = 'RFI Raised';
+      p.comments.push({ id: 'c'+Date.now(), userId: getSession().userId, text: 'RFI: ' + text, ts: new Date().toISOString() });
+      setState(state);
+      audit('RFI_RAISE', pid, null, { text, deadline });
+      notify(p.qpId, `RFI raised on ${p.number}. Response due in ${deadline} days.`);
+      toast('RFI raised', 'success');
+      refreshNotifBadge();
+      navigate('project-detail', pid);
+      return true;
+    }
+  });
+}
+
+function approveProject(pid) {
+  showModal({
+    title: 'Approve Submission',
+    body: '<p>This action will mark the project as <b>Approved</b>. The decision is final and will be recorded in the audit trail. A decision letter will be generated.</p>',
+    onConfirm: () => {
+      const state = getState();
+      const p = state.projects.find(x => x.id === pid);
+      p.state = 'Approved';
+      p.decision = 'Approved';
+      p.decisionAt = new Date().toISOString();
+      p.decisionBy = getSession().userId;
+      setState(state);
+      audit('PROJECT_APPROVE', pid, null, { decision: 'Approved' });
+      notify(p.qpId, `Decision: ${p.number} has been Approved.`);
+      toast('Project approved', 'success');
+      refreshNotifBadge();
+      navigate('project-detail', pid);
+      return true;
+    }
+  });
+}
+
+function rejectProject(pid) {
+  showModal({
+    title: 'Reject Submission',
+    body: `
+      <div class="form-group">
+        <label class="form-label">Rejection Reason <span class="required">*</span></label>
+        <textarea id="reject-reason" data-testid="reject-reason" class="form-control" rows="5" placeholder="Minimum 100 characters..."></textarea>
+        <div id="reject-counter" style="font-size: 11px; color: var(--grey-500); margin-top: 4px;">0 / 100</div>
+      </div>
+    `,
+    onConfirm: () => {
+      const reason = document.getElementById('reject-reason').value.trim();
+      // INTENTIONAL DEFECT #5: Min length should be 100 (FR-WF-06) but app accepts 50+
+      if (reason.length < 50) {
+        toast('Reason too short', 'error'); return false;
+      }
+      const state = getState();
+      const p = state.projects.find(x => x.id === pid);
+      p.state = 'Rejected';
+      p.decision = 'Rejected';
+      p.decisionAt = new Date().toISOString();
+      p.decisionBy = getSession().userId;
+      p.comments.push({ id: 'c'+Date.now(), userId: getSession().userId, text: 'Rejection reason: ' + reason, ts: new Date().toISOString() });
+      setState(state);
+      audit('PROJECT_REJECT', pid, null, { decision: 'Rejected', reason });
+      notify(p.qpId, `Decision: ${p.number} has been Rejected.`);
+      toast('Project rejected', 'success');
+      refreshNotifBadge();
+      navigate('project-detail', pid);
+      return true;
+    }
+  });
+  // Live counter
+  setTimeout(() => {
+    const ta = document.getElementById('reject-reason');
+    const c = document.getElementById('reject-counter');
+    if (ta) ta.addEventListener('input', () => { c.textContent = `${ta.value.length} / 100`; });
+  }, 50);
+}
+
+function overrideRule(pid, code) {
+  showModal({
+    title: 'Override Rule Failure',
+    body: `
+      <p style="margin-bottom: 12px;">Provide a justification for overriding this rule. The override will be recorded in the audit trail.</p>
+      <div class="form-group">
+        <label class="form-label">Justification <span class="required">*</span></label>
+        <textarea id="override-text" data-testid="override-text" class="form-control" rows="4" placeholder="Minimum 30 characters"></textarea>
+      </div>
+    `,
+    onConfirm: () => {
+      const text = document.getElementById('override-text').value.trim();
+      if (text.length < 30) { toast('Justification must be at least 30 characters', 'error'); return false; }
+      const state = getState();
+      const p = state.projects.find(x => x.id === pid);
+      const r = p.rules.find(x => x.code === code);
+      r.status = 'Pass';
+      r.override = { by: getSession().userId, reason: text, at: new Date().toISOString() };
+      setState(state);
+      audit('RULE_OVERRIDE', pid + ':' + code, null, { reason: text });
+      toast('Rule overridden', 'success');
+      navigate('project-detail', pid);
+      return true;
+    }
+  });
+}
+
+// ----- Page: Review Queue -----
+function renderReviewQueue() {
+  setBreadcrumb(['Workspace', 'Review Queue']);
+  const state = getState();
+  const session = getSession();
+  let queue = state.projects.filter(p => p.state === 'Submitted' || p.state === 'Under Review' || p.state === 'RFI Raised');
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Review Queue</div>
+        <div class="page-subtitle">${queue.length} submission${queue.length !== 1 ? 's' : ''} pending review</div>
+      </div>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>Project No.</th><th>Name</th><th>Type</th><th>GFA</th><th>State</th><th>Submitted</th></tr></thead>
+        <tbody>
+          ${queue.length === 0 ? '<tr><td colspan="6" class="empty-state">No submissions pending review.</td></tr>' :
+            queue.map(p => `
+              <tr class="clickable" data-testid="queue-row-${p.id}" onclick="navigate('project-detail','${p.id}')">
+                <td><b>${p.number}</b></td>
+                <td>${escapeHtml(p.name)}</td>
+                <td>${p.buildingType}</td>
+                <td>${p.gfa.toLocaleString()}</td>
+                <td>${stateBadge(p.state)}</td>
+                <td>${p.submittedAt ? formatDate(p.submittedAt) : '—'}</td>
+              </tr>
+            `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ----- Page: Compare -----
+function renderCompare(pid) {
+  const state = getState();
+  const p = state.projects.find(x => x.id === pid);
+  if (!p) { document.getElementById('content').innerHTML = '<div class="empty-state">Project not found.</div>'; return; }
+  setBreadcrumb(['Projects', p.number, 'Compare Revisions']);
+
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Compare Revisions</div>
+        <div class="page-subtitle">${p.name} · ${p.number}</div>
+      </div>
+      <button class="btn btn-secondary" onclick="navigate('project-detail','${p.id}')">Back</button>
+    </div>
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Revision A</label>
+          <select data-testid="cmp-a" class="form-control">
+            ${p.drawings.map(d => `<option value="${d.id}">${d.name} (${d.revision})</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Revision B</label>
+          <select data-testid="cmp-b" class="form-control">
+            ${p.drawings.map(d => `<option value="${d.id}">${d.name} (${d.revision})</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mode</label>
+        <select data-testid="cmp-mode" class="form-control" style="width:200px;">
+          <option>Side-by-side</option><option>Overlay</option>
+        </select>
+      </div>
+      <div class="compare-grid">
+        <div class="compare-pane" data-testid="cmp-pane-a">Revision A viewport</div>
+        <div class="compare-pane" data-testid="cmp-pane-b">Revision B viewport</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span>Change Summary</span>
+        <button data-testid="cmp-export" class="btn btn-secondary btn-sm" onclick="toast('Export not yet wired','info')">Export PDF</button>
+      </div>
+      <div class="change-row change-added"><span><b>Added</b> · Wall WL-302 · L02 / Grid C-7</span><span>+</span></div>
+      <div class="change-row change-modified"><span><b>Modified</b> · Door DOR-L01-04 · width 0.85 → 0.95 m</span><span>~</span></div>
+      <div class="change-row change-removed"><span><b>Removed</b> · Column COL-L00-12 · L00 / Grid B-3</span><span>−</span></div>
+    </div>
+  `;
+}
+
+// ----- Page: Rule check (re-run) -----
+function renderRuleCheck(pid) {
+  const state = getState();
+  const p = state.projects.find(x => x.id === pid);
+  setBreadcrumb(['Projects', p.number, 'Run Rule Check']);
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Run Rule Check</div>
+        <div class="page-subtitle">${p.name}</div>
+      </div>
+      <button class="btn btn-secondary" onclick="navigate('project-detail','${p.id}')">Back</button>
+    </div>
+    <div class="card">
+      <p>This will execute the active rule library against the latest drawings. Estimated time: <b>up to 5 minutes</b>.</p>
+      <button data-testid="run-rules-btn" class="btn btn-orange" onclick="executeRuleCheck('${pid}')">Run Now</button>
+      <div id="rule-progress" class="hidden" style="margin-top: 16px;">
+        <div class="progress-bar"><div class="progress-fill" id="rule-progress-fill"></div></div>
+        <div id="rule-progress-text" style="font-size: 12px; color: var(--grey-500);">Initializing...</div>
+      </div>
+    </div>
+  `;
+}
+
+function executeRuleCheck(pid) {
+  document.getElementById('rule-progress').classList.remove('hidden');
+  const fill = document.getElementById('rule-progress-fill');
+  const txt = document.getElementById('rule-progress-text');
+  let pct = 0;
+  const stages = ['Parsing IFC...','Extracting elements...','Running CORRIDOR-WIDTH...','Running DOOR-WIDTH...','Running FIRE-STAIRS...','Running GFA-COMPUTE...','Running MEP-CLASH...','Compiling results...'];
+  let stage = 0;
+  const interval = setInterval(() => {
+    pct += 12.5; fill.style.width = pct + '%';
+    txt.textContent = stages[stage] || 'Done';
+    stage++;
+    if (pct >= 100) {
+      clearInterval(interval);
+      // Set demo rules
+      const state = getState();
+      const p = state.projects.find(x => x.id === pid);
+      p.rules = [
+        { code: 'CORRIDOR-WIDTH', title: 'Minimum corridor width 1.2m', status: 'Pass', element: 'CORR-L01-A', measured: '1.30 m', required: '1.20 m' },
+        { code: 'DOOR-WIDTH', title: 'Minimum door width 0.9m', status: 'Pass', element: 'DOR-L01-12', measured: '0.95 m', required: '0.90 m' },
+        { code: 'FIRE-STAIRS', title: 'Fire escape stair count', status: 'Warning', element: '—', measured: '2 stairs', required: '3 stairs' },
+        { code: 'GFA-COMPUTE', title: 'GFA tolerance ±2%', status: 'Pass', element: '—', measured: '12,640 sqm', required: '12,500 ± 250 sqm' },
+        { code: 'MEP-CLASH', title: 'MEP vs Structure clash', status: 'Fail', element: 'CLASH-L02-7', measured: 'Beam B-204 vs Duct DH-12', required: 'No clashes' }
+      ];
+      if (p.state === 'Submitted') p.state = 'Under Review';
+      setState(state);
+      audit('RULE_CHECK_RUN', pid, null, { results: p.rules.length });
+      toast('Rule check complete', 'success');
+      setTimeout(() => navigate('project-detail', pid), 600);
+    }
+  }, 350);
+}
+
+// ----- Upload modal -----
+function openUploadModal(pid) {
+  showModal({
+    title: 'Upload Drawing',
+    body: `
+      <div class="form-group">
+        <label class="form-label">File <span class="required">*</span></label>
+        <input id="upload-file" data-testid="upload-file" type="file" class="form-control">
+        <div style="font-size: 11px; color: var(--grey-500); margin-top: 4px;">Accepted: .ifc, .rvt, .dwg, .dxf, .pdf · Max 500 MB</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Discipline</label>
+          <select id="upload-discipline" data-testid="upload-discipline" class="form-control">
+            <option>Architectural</option><option>Structural</option><option>MEP</option>
+            <option>Civil</option><option>Landscape</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Drawing Type</label>
+          <select id="upload-type" data-testid="upload-type" class="form-control">
+            <option>Plan</option><option>Section</option><option>Elevation</option>
+            <option>Detail</option><option>3D Model</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Floor / Level</label>
+        <input id="upload-floor" data-testid="upload-floor" type="text" class="form-control" placeholder="e.g., L01">
+      </div>
+    `,
+    onConfirm: () => {
+      const file = document.getElementById('upload-file').files[0];
+      if (!file) { toast('Select a file', 'error'); return false; }
+      const ext = file.name.split('.').pop().toLowerCase();
+      const allowed = ['ifc','rvt','dwg','dxf','pdf'];
+      // INTENTIONAL DEFECT #6: Extension check is case-sensitive — uppercase .PDF is rejected,
+      // but the FRD just says "accepted file formats". A real fix would lowercase before check.
+      // BUT also: file size check is missing entirely (FR-UPLOAD-02 unenforced).
+      if (!allowed.includes(ext)) { toast('Unsupported file format', 'error'); return false; }
+
+      const state = getState();
+      const p = state.projects.find(x => x.id === pid);
+      // Revision logic: if same name exists, increment revision
+      const existing = p.drawings.filter(d => d.name === file.name);
+      const rev = 'R' + existing.length;
+      const drawing = {
+        id: 'd' + Date.now(),
+        name: file.name,
+        discipline: document.getElementById('upload-discipline').value,
+        drawingType: document.getElementById('upload-type').value,
+        floor: document.getElementById('upload-floor').value || 'L01',
+        revision: rev,
+        uploadedBy: getSession().userId,
+        uploadedAt: new Date().toISOString(),
+        size: file.size,
+        scanStatus: 'Clean'
+      };
+      p.drawings.push(drawing);
+      setState(state);
+      audit('DRAWING_UPLOAD', pid + ':' + drawing.id, null, drawing);
+      toast(`Uploaded as ${rev}`, 'success');
+      navigate('project-detail', pid);
+      return true;
+    }
+  });
+}
+
+// ----- Admin pages -----
+function renderUsers() {
+  setBreadcrumb(['Administration', 'Users']);
+  const state = getState();
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Users</div>
+        <div class="page-subtitle">${state.users.length} users</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button data-testid="bulk-import-btn" class="btn btn-secondary" onclick="openBulkImport()">Bulk Import (CSV)</button>
+        <button data-testid="new-user-btn" class="btn btn-orange" onclick="openNewUser()">+ New User</button>
+      </div>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Firm</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${state.users.map(u => `
+            <tr data-testid="user-row-${u.id}">
+              <td><b>${escapeHtml(u.name)}</b></td>
+              <td>${u.email}</td>
+              <td>${u.role}</td>
+              <td>${u.firm}</td>
+              <td><span class="badge badge-approved">Active</span></td>
+              <td><button class="btn btn-secondary btn-sm">Deactivate</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function openNewUser() {
+  showModal({
+    title: 'New User',
+    body: `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input id="nu-name" data-testid="nu-name" type="text" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input id="nu-email" data-testid="nu-email" type="email" class="form-control">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select id="nu-role" data-testid="nu-role" class="form-control">
+            <option>QP</option><option>Officer</option><option>Senior Officer</option><option>Admin</option><option>Auditor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Firm</label>
+          <input id="nu-firm" data-testid="nu-firm" type="text" class="form-control">
+        </div>
+      </div>
+    `,
+    onConfirm: () => {
+      const name = document.getElementById('nu-name').value.trim();
+      const email = document.getElementById('nu-email').value.trim().toLowerCase();
+      const role = document.getElementById('nu-role').value;
+      const firm = document.getElementById('nu-firm').value.trim();
+      if (!name || !email) { toast('Name and email required', 'error'); return false; }
+      const state = getState();
+      if (state.users.find(u => u.email === email)) { toast('Email already exists', 'error'); return false; }
+      state.users.push({ id: 'u'+Date.now(), name, email, role, firm: firm || 'Unknown' });
+      setState(state);
+      audit('USER_CREATE', email, null, { name, role });
+      toast('User created', 'success');
+      navigate('users');
+      return true;
+    }
+  });
+}
+
+function openBulkImport() {
+  showModal({
+    title: 'Bulk Import Users',
+    body: `
+      <p style="margin-bottom: 12px;">Upload a CSV with columns: <code>name,email,role,firm</code>. <a href="#" onclick="downloadCsvTemplate()">Download template</a></p>
+      <input data-testid="bulk-file" type="file" accept=".csv" class="form-control">
+    `,
+    onConfirm: () => { toast('Bulk import is mocked', 'info'); return true; }
+  });
+}
+
+function downloadCsvTemplate() {
+  const csv = 'name,email,role,firm\nJohn Doe,john@example.com,QP,DoeArchitects\n';
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'user_import_template.csv'; a.click();
+}
+
+function renderRules() {
+  setBreadcrumb(['Administration', 'Rule Library']);
+  const state = getState();
+  document.getElementById('content').innerHTML = `
+    <div class="page-header"><div><div class="page-title">Rule Library</div><div class="page-subtitle">${state.rules.length} rules</div></div></div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>Code</th><th>Title</th><th>Active</th></tr></thead>
+        <tbody>
+          ${state.rules.map(r => `<tr><td><b>${r.code}</b></td><td>${r.title}</td><td>${r.active ? '<span class="badge badge-approved">Yes</span>' : '<span class="badge badge-withdrawn">No</span>'}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ----- Audit log -----
+function renderAuditLog() {
+  setBreadcrumb(['Compliance', 'Audit Log']);
+  const state = getState();
+  document.getElementById('content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Audit Log</div><div class="page-subtitle">${state.auditLog.length} entries · 7-year retention</div></div>
+      <button data-testid="audit-export" class="btn btn-secondary" onclick="exportAudit()">Export CSV</button>
+    </div>
+    <div class="card">
+      <div class="filter-bar">
+        <input data-testid="audit-search" type="text" class="form-control" placeholder="Search action or target" oninput="renderAuditList()">
+      </div>
+      <div id="audit-list-wrap"></div>
+    </div>
+  `;
+  renderAuditList();
+}
+
+function renderAuditList() {
+  const state = getState();
+  const search = (document.querySelector('[data-testid="audit-search"]')?.value || '').toLowerCase();
+  let logs = state.auditLog.slice().reverse();
+  if (search) logs = logs.filter(l => l.action.toLowerCase().includes(search) || l.target.toLowerCase().includes(search));
+  const html = logs.length === 0 ? '<div class="empty-state">No audit entries.</div>' : `
+    <table class="data-table">
+      <thead><tr><th>Timestamp (UTC)</th><th>User</th><th>Action</th><th>Target</th></tr></thead>
+      <tbody>
+        ${logs.map(l => {
+          const user = state.users.find(u => u.id === l.userId);
+          return `<tr><td>${l.ts}</td><td>${user ? user.name : l.userId}</td><td><b>${l.action}</b></td><td>${l.target}</td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById('audit-list-wrap').innerHTML = html;
+}
+
+function exportAudit() {
+  const state = getState();
+  const rows = [['ts','user','action','target','before','after','ip']];
+  state.auditLog.forEach(l => {
+    const u = state.users.find(x => x.id === l.userId);
+    rows.push([l.ts, u ? u.email : l.userId, l.action, l.target, l.before || '', l.after || '', l.ip]);
+  });
+  const csv = rows.map(r => r.map(v => `"${(v+'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'audit_log.csv'; a.click();
+}
+
+// ----- Notifications -----
+function refreshNotifBadge() {
+  const session = getSession();
+  if (!session) return;
+  const state = getState();
+  const unread = state.notifications.filter(n => n.userId === session.userId && !n.read).length;
+  document.getElementById('notif-dot').style.display = unread > 0 ? 'block' : 'none';
+}
+
+function toggleNotifications() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) {
+    const session = getSession();
+    const state = getState();
+    const list = state.notifications.filter(n => n.userId === session.userId).slice().reverse();
+    document.getElementById('notif-list').innerHTML = list.length === 0
+      ? '<div class="empty-state">No notifications.</div>'
+      : list.map(n => `<div class="notif-item ${n.read?'':'unread'}" data-testid="notif-${n.id}">${escapeHtml(n.text)}<div class="notif-time">${formatDate(n.ts)}</div></div>`).join('');
+    // Mark read
+    state.notifications.forEach(n => { if (n.userId === session.userId) n.read = true; });
+    setState(state);
+    setTimeout(refreshNotifBadge, 500);
+  }
+}
+
+// ----- Modal -----
+let _modalOnConfirm = null;
+function showModal({ title, body, onConfirm }) {
+  _modalOnConfirm = onConfirm;
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">${escapeHtml(title)}</div>
+    <div>${body}</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button data-testid="modal-confirm" class="btn btn-orange" onclick="confirmModal()">Confirm</button>
+    </div>
+  `;
+  document.getElementById('modal-root').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-root').classList.remove('show'); _modalOnConfirm = null; }
+function confirmModal() { if (_modalOnConfirm) { const r = _modalOnConfirm(); if (r !== false) closeModal(); } else closeModal(); }
+
+// ----- Helpers -----
+function escapeHtml(s) { return (s+'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function formatDate(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  return d.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function formatSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+function stateBadge(s) {
+  const cls = {
+    'Draft':'badge-draft','Submitted':'badge-submitted','Under Review':'badge-review',
+    'RFI Raised':'badge-rfi','Approved':'badge-approved','Rejected':'badge-rejected','Withdrawn':'badge-withdrawn'
+  }[s] || 'badge-draft';
+  return `<span class="badge ${cls}" data-testid="state-badge">${s}</span>`;
+}
+
+
+// ===== BIM Viewer interactivity =====
+let _viewerTool = 'orbit';
+let _selectedGuid = null;
+let _hidden = new Set();        // GUIDs hidden by user (hide / isolate)
+let _hiddenByLayer = new Set(); // disciplines hidden by layer toggle
+let _measurePoints = [];        // [{x,y,guid}]
+let _viewScale = 1;
+let _viewTx = 0;
+let _viewTy = 0;
+let _rotY = 0;
+let _isDragging = false;
+let _dragStartX = 0; let _dragStartY = 0;
+let _dragStartTx = 0; let _dragStartTy = 0;
+let _dragStartRot = 0;
+
+function setViewerTool(name) {
+  _viewerTool = name;
+  document.querySelectorAll('.viewer-tool').forEach(b => b.classList.remove('active'));
+  const map = { orbit:'vw-orbit', pan:'vw-pan', measure:'vw-measure' };
+  if (map[name]) {
+    const btn = document.querySelector('[data-testid="' + map[name] + '"]');
+    if (btn) btn.classList.add('active');
+  }
+  const ind = document.querySelector('[data-testid="viewer-active-tool"]');
+  if (ind) ind.textContent = name;
+  if (name !== 'measure') clearMeasurement();
+}
+
+function selectElement(g, event) {
+  if (event) event.stopPropagation();
+  // Highlight
+  document.querySelectorAll('.bim-el').forEach(el => el.classList.remove('selected'));
+  g.classList.add('selected');
+  const data = JSON.parse(g.getAttribute('data-element'));
+  _selectedGuid = data.guid;
+
+  // Populate panel
+  const set = (id, v) => { const el = document.querySelector('[data-testid="' + id + '"]'); if (el) el.textContent = v || '—'; };
+  set('el-guid', data.guid);
+  set('el-type', data.type);
+  set('el-discipline', data.discipline);
+  set('el-storey', data.storey);
+  set('el-material', data.material);
+
+  // Measure mode: collect points
+  if (_viewerTool === 'measure') {
+    addMeasurePoint(g);
+  }
+}
+
+function addMeasurePoint(g) {
+  const bbox = g.getBBox();
+  const cx = bbox.x + bbox.width / 2;
+  const cy = bbox.y + bbox.height / 2;
+  const data = JSON.parse(g.getAttribute('data-element'));
+  _measurePoints.push({ x: cx, y: cy, guid: data.guid });
+
+  if (_measurePoints.length > 2) _measurePoints = _measurePoints.slice(-2);
+  redrawMeasurement();
+
+  if (_measurePoints.length === 2) {
+    // Pixels to metres: scale was 28 px/m in renderer
+    const dx = _measurePoints[1].x - _measurePoints[0].x;
+    const dy = _measurePoints[1].y - _measurePoints[0].y;
+    const px = Math.sqrt(dx*dx + dy*dy);
+    const meters = (px / 20).toFixed(2);
+    const el = document.querySelector('[data-testid="measure-distance"]');
+    if (el) el.textContent = meters + ' m';
+  }
+}
+
+function redrawMeasurement() {
+  const layer = document.getElementById('measure-layer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  _measurePoints.forEach((p, i) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 5);
+    c.setAttribute('fill', '#f47b20'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', 2);
+    c.setAttribute('data-testid', 'measure-point-' + i);
+    layer.appendChild(c);
+  });
+  if (_measurePoints.length === 2) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', _measurePoints[0].x); line.setAttribute('y1', _measurePoints[0].y);
+    line.setAttribute('x2', _measurePoints[1].x); line.setAttribute('y2', _measurePoints[1].y);
+    line.setAttribute('stroke', '#f47b20'); line.setAttribute('stroke-width', 2);
+    line.setAttribute('stroke-dasharray', '4,4');
+    line.setAttribute('data-testid', 'measure-line');
+    layer.appendChild(line);
+  }
+}
+
+function clearMeasurement() {
+  _measurePoints = [];
+  redrawMeasurement();
+  const el = document.querySelector('[data-testid="measure-distance"]');
+  if (el) el.textContent = '—';
+}
+
+function canvasClicked(event) {
+  // If clicked on bg (not on element), clear selection
+  if (event.target.tagName === 'svg' || event.target.tagName === 'polygon' && !event.target.closest('.bim-el')) {
+    if (_viewerTool !== 'measure') {
+      document.querySelectorAll('.bim-el').forEach(el => el.classList.remove('selected'));
+      _selectedGuid = null;
+    }
+  }
+}
+
+function toggleLayer(discipline, visible) {
+  if (visible) _hiddenByLayer.delete(discipline);
+  else _hiddenByLayer.add(discipline);
+  applyVisibility();
+}
+
+function applyVisibility() {
+  let visible = 0; let total = 0;
+  document.querySelectorAll('.bim-el').forEach(el => {
+    total++;
+    const guid = el.getAttribute('data-guid');
+    const disc = el.getAttribute('data-discipline');
+    const hide = _hidden.has(guid) || _hiddenByLayer.has(disc);
+    el.style.display = hide ? 'none' : '';
+    if (!hide) visible++;
+  });
+  const vc = document.querySelector('[data-testid="visible-count"]');
+  if (vc) vc.textContent = visible;
+  const lc = document.getElementById('layer-count');
+  if (lc) lc.textContent = (5 - _hiddenByLayer.size) + '/5';
+}
+
+function isolateSelected() {
+  if (!_selectedGuid) { toast('Select an element first', 'error'); return; }
+  document.querySelectorAll('.bim-el').forEach(el => {
+    if (el.getAttribute('data-guid') !== _selectedGuid) _hidden.add(el.getAttribute('data-guid'));
+  });
+  applyVisibility();
+}
+
+function hideSelected() {
+  if (!_selectedGuid) { toast('Select an element first', 'error'); return; }
+  _hidden.add(_selectedGuid);
+  applyVisibility();
+}
+
+function showAllElements() {
+  _hidden.clear();
+  applyVisibility();
+}
+
+function zoomViewer(factor) {
+  const svg = document.getElementById('bim-svg');
+  if (!svg) return;
+  const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+  const cx = vb[0] + vb[2] / 2;
+  const cy = vb[1] + vb[3] / 2;
+  const newW = vb[2] * factor;
+  const newH = vb[3] * factor;
+  svg.setAttribute('viewBox', (cx - newW/2) + ' ' + (cy - newH/2) + ' ' + newW + ' ' + newH);
+}
+
+function fitViewer() {
+  const svg = document.getElementById('bim-svg');
+  if (svg) svg.setAttribute('viewBox', '0 0 940 520');
+  _rotY = 0;
+  applyTransform();
+}
+
+function applyTransform() {
+  const root = document.getElementById('bim-root');
+  if (!root) return;
+  // Apply a rotation around the center via skew approximation (subtle horizontal tilt)
+  root.setAttribute('transform', 'translate(' + _viewTx + ',' + _viewTy + ') rotate(' + _rotY + ' 470 360)');
+}
+
+function viewerMouseDown(event) {
+  if (event.target.tagName === 'polygon' && _viewerTool !== 'orbit' && _viewerTool !== 'pan') return;
+  _isDragging = true;
+  _dragStartX = event.clientX;
+  _dragStartY = event.clientY;
+  _dragStartTx = _viewTx; _dragStartTy = _viewTy;
+  _dragStartRot = _rotY;
+}
+
+function viewerMouseMove(event) {
+  if (!_isDragging) return;
+  const dx = event.clientX - _dragStartX;
+  const dy = event.clientY - _dragStartY;
+  if (_viewerTool === 'pan') {
+    _viewTx = _dragStartTx + dx;
+    _viewTy = _dragStartTy + dy;
+  } else if (_viewerTool === 'orbit') {
+    _rotY = _dragStartRot + dx * 0.2;
+  }
+  applyTransform();
+}
+
+function viewerMouseUp(event) { _isDragging = false; }
+
+
+// ----- Boot -----
+window.addEventListener('DOMContentLoaded', () => {
+  // Reset button via URL ?reset=1
+  if (location.search.includes('reset=1')) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LOGIN_ATTEMPTS_KEY);
+    sessionStorage.clear();
+    location.replace(location.pathname);
+    return;
+  }
+  getState(); // ensure seeded
+  if (getSession()) {
+    document.getElementById('screen-auth').classList.add('hidden');
+    document.getElementById('screen-app').classList.remove('hidden');
+    initAppShell();
+    navigate('dashboard');
+  } else {
+    showLogin();
+  }
+});
+
+// Close notification panel on outside click
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('notif-panel');
+  const bell = document.querySelector('[data-testid="notification-bell"]');
+  if (panel && !panel.classList.contains('hidden') && !panel.contains(e.target) && bell && !bell.contains(e.target)) {
+    panel.classList.add('hidden');
+  }
+});
+</script>
+</body>
+</html>
